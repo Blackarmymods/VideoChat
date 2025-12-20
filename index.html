@@ -1,65 +1,264 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-    <title>My Private Video Call</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat Messenger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        #video-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 80%; margin: 20px auto; }
-        .video-box { width: 100%; height: 300px; background: #222; border-radius: 10px; overflow: hidden; }
-        .controls { text-align: center; margin-top: 50px; }
-        input { padding: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; color: white; }
-        .join-btn { background: #28a745; }
-        .receive-btn { background: #007bff; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Telegram Style Blue */
+        .primary-bg { background-color: #517da2; }
+        .primary-text { color: #517da2; }
+
+        .chat-list-item:active {
+            background-color: #f1f5f9;
+        }
+
+        .message-bubble {
+            max-width: 80%;
+            padding: 8px 14px;
+            font-size: 15px;
+            position: relative;
+        }
+
+        .bubble-in {
+            background: #ffffff;
+            border-radius: 18px 18px 18px 4px;
+            align-self: flex-start;
+            color: #000;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .bubble-out {
+            background: #efffde; /* WhatsApp Greenish or #e1ffc7 */
+            border-radius: 18px 18px 4px 18px;
+            align-self: flex-end;
+            color: #000;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        #app-container {
+            max-width: 500px;
+            margin: 0 auto;
+            height: 100vh;
+            position: relative;
+            background: #e6ebee; /* Chat Wallpaper color */
+        }
     </style>
 </head>
-<body>
+<body class="bg-gray-100">
 
-    <div class="controls">
-        <h2>Video Call App</h2>
-        <input type="text" id="roomID" placeholder="Room ID daalein (e.g. 555)">
-        <button class="join-btn" onclick="startCall('join')">Create Room</button>
-        <button class="receive-btn" onclick="startCall('receive')">Join Call</button>
-        <button style="background:red;" onclick="location.reload()">Hang Up</button>
+    <div id="app-container" class="shadow-2xl overflow-hidden flex flex-col bg-white">
+        
+        <!-- 1. Account Creation (One-time) -->
+        <div id="registration-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-8 hidden">
+            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+            </div>
+            <h1 class="text-2xl font-bold mb-2">Messenger Me Aaiye</h1>
+            <p class="text-gray-500 text-center mb-8">Apna naam likhein chat shuru karne ke liye.</p>
+            <input type="text" id="reg-name" placeholder="Aapka Naam" class="w-full border-b-2 border-blue-500 py-2 px-1 text-lg outline-none text-center mb-10">
+            <button onclick="createAccount()" class="w-full bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-600 transition-all">Account Banayein</button>
+        </div>
+
+        <!-- 2. Home Screen (Chat List) -->
+        <div id="home-screen" class="flex flex-col h-full">
+            <header class="primary-bg text-white p-4 flex items-center justify-between shadow-md">
+                <div class="flex items-center gap-3">
+                    <img id="my-profile-img" src="" class="w-10 h-10 rounded-full bg-blue-200 border border-white/20">
+                    <h2 class="font-bold text-xl">Messenger</h2>
+                </div>
+                <button onclick="toggleNewChatModal()" class="p-2 hover:bg-white/10 rounded-full">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                </button>
+            </header>
+
+            <div id="chat-list" class="flex-1 overflow-y-auto bg-white">
+                <!-- Chat Items like Telegram/WhatsApp -->
+            </div>
+        </div>
+
+        <!-- 3. Chat Detail Screen -->
+        <div id="chat-detail-screen" class="fixed inset-0 z-40 bg-[#e6ebee] flex flex-col translate-x-full transition-transform duration-300">
+            <header class="primary-bg text-white p-3 flex items-center gap-2 shadow-md">
+                <button onclick="closeChat()" class="p-2 hover:bg-white/10 rounded-full">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <img id="active-chat-img" src="" class="w-10 h-10 rounded-full bg-gray-200">
+                <div class="flex-1 overflow-hidden" onclick="toggleRenameContact()">
+                    <h3 id="active-chat-name" class="font-bold truncate">Banda</h3>
+                    <p class="text-[10px] text-blue-100 uppercase font-bold tracking-tighter">Online</p>
+                </div>
+            </header>
+
+            <div id="message-window" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 hide-scrollbar">
+                <!-- Messages bubbles -->
+            </div>
+
+            <footer class="bg-white p-2 flex items-center gap-2 border-t">
+                <input type="text" id="msg-input" placeholder="Likhein..." class="flex-1 bg-gray-100 rounded-full px-5 py-2.5 outline-none text-sm">
+                <button onclick="handleSendMessage()" class="bg-blue-500 text-white p-2.5 rounded-full shadow-md">
+                    <svg class="w-6 h-6 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                </button>
+            </footer>
+        </div>
+
+        <!-- New Chat Modal -->
+        <div id="new-chat-modal" class="fixed inset-0 z-[60] bg-black/50 hidden items-center justify-center p-6">
+            <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
+                <h3 class="font-bold text-lg mb-4">Nayi Chat Folder</h3>
+                <input type="text" id="new-contact-name" placeholder="Bande ka naam..." class="w-full border p-3 rounded-xl mb-4 outline-none border-blue-200 focus:border-blue-500">
+                <div class="flex gap-2">
+                    <button onclick="toggleNewChatModal()" class="flex-1 text-gray-500 font-bold py-2">Cancel</button>
+                    <button onclick="createNewFolder()" class="flex-1 bg-blue-500 text-white rounded-lg font-bold py-2">Create</button>
+                </div>
+            </div>
+        </div>
+
     </div>
-
-    <div id="video-container">
-        <div id="local-video" class="video-box"></div>
-        <div id="remote-video" class="video-box"></div>
-    </div>
-
-    <script src="https://resource.zegocloud.com/prebuilt/crypto-js.js"></script>
-    <script src="https://unpkg.com/zegoloud-prebuilt-sdk@latest/ZegoCloudPrebuilt.js"></script>
 
     <script>
-        function startCall(mode) {
-            const roomID = document.getElementById('roomID').value;
-            if (!roomID) { alert("Room ID zaroori hai!"); return; }
+        const API_AVATAR = "https://ui-avatars.com/api/?background=random&color=fff&size=128&name=";
+        let myAccount = JSON.parse(localStorage.getItem('user_account')) || null;
+        let folders = JSON.parse(localStorage.getItem('chat_folders')) || {};
+        let currentChatId = null;
 
-            // Step 3 ki details yahan dalni hain
-            const appID = 1424939938; // Apna AppID yahan likhein
-            const serverSecret = "b018f312b5c43842278780fe921b3e2e"; // Apna Secret yahan likhein
+        window.onload = () => {
+            if (!myAccount) {
+                document.getElementById('registration-screen').classList.remove('hidden');
+            } else {
+                initHome();
+            }
+        };
 
-            // User ki random ID aur Name
-            const userID = Math.floor(Math.random() * 10000) + "";
-            const userName = "User_" + userID;
+        function createAccount() {
+            const name = document.getElementById('reg-name').value.trim();
+            if (name.length < 2) return alert("Sahi naam likhein!");
+            myAccount = { name: name, id: Date.now() };
+            localStorage.setItem('user_account', JSON.stringify(myAccount));
+            document.getElementById('registration-screen').classList.add('hidden');
+            initHome();
+        }
 
-            // Token generate karna (SDK ke through)
-            const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(appID, serverSecret, roomID, userID, userName);
+        function initHome() {
+            document.getElementById('my-profile-img').src = API_AVATAR + myAccount.name;
+            renderChatList();
+        }
 
-            // SDK ko config karna
-            const zp = ZegoUIKitPrebuilt.create(kitToken);
+        function toggleNewChatModal() {
+            const m = document.getElementById('new-chat-modal');
+            m.classList.toggle('hidden');
+            m.classList.toggle('flex');
+            document.getElementById('new-contact-name').focus();
+        }
+
+        function createNewFolder() {
+            const name = document.getElementById('new-contact-name').value.trim();
+            if (!name) return;
+            const id = name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
+            folders[id] = { name: name, messages: [], lastTime: '' };
+            localStorage.setItem('chat_folders', JSON.stringify(folders));
+            toggleNewChatModal();
+            renderChatList();
+            openChat(id);
+        }
+
+        function renderChatList() {
+            const list = document.getElementById('chat-list');
+            list.innerHTML = '';
             
-            zp.joinRoom({
-                container: document.querySelector('#local-video'), // Video isi div mein dikhega
-                sharedLinks: [{ name: 'Copy Link', url: window.location.origin + '?roomID=' + roomID }],
-                scenario: { mode: ZegoUIKitPrebuilt.GroupCall },
-                showScreenSharingButton: true,
-                showUserList: false,
-                maxUsers: 2,
-                layout: "Grid",
-                showPreJoinView: false // Direct call start hogi
+            const folderIds = Object.keys(folders);
+            if (folderIds.length === 0) {
+                list.innerHTML = `<div class="p-10 text-center text-gray-400 text-sm">Koi chat nahi hai. "+" par click karein.</div>`;
+                return;
+            }
+
+            folderIds.forEach(id => {
+                const f = folders[id];
+                const lastMsg = f.messages.length > 0 ? f.messages[f.messages.length - 1].text : "Start chatting...";
+                const time = f.messages.length > 0 ? f.messages[f.messages.length - 1].time : "";
+                
+                const item = document.createElement('div');
+                item.className = "chat-list-item flex items-center gap-4 p-4 cursor-pointer border-b border-gray-50 transition-colors";
+                item.onclick = () => openChat(id);
+                item.innerHTML = `
+                    <div class="relative">
+                        <img src="${API_AVATAR + f.name}" class="w-14 h-14 rounded-full shadow-sm">
+                        <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-baseline mb-1">
+                            <h4 class="font-bold text-gray-800 truncate">${f.name}</h4>
+                            <span class="text-[10px] text-gray-400 font-medium">${time}</span>
+                        </div>
+                        <p class="text-sm text-gray-500 truncate">${lastMsg}</p>
+                    </div>
+                `;
+                list.appendChild(item);
             });
         }
+
+        function openChat(id) {
+            currentChatId = id;
+            const f = folders[id];
+            document.getElementById('active-chat-name').innerText = f.name;
+            document.getElementById('active-chat-img').src = API_AVATAR + f.name;
+            document.getElementById('chat-detail-screen').style.transform = "translateX(0)";
+            renderMessages();
+        }
+
+        function closeChat() {
+            document.getElementById('chat-detail-screen').style.transform = "translateX(100%)";
+            renderChatList();
+        }
+
+        function handleSendMessage() {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if (!text || !currentChatId) return;
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const msg = { text, time, sender: 'me' };
+
+            folders[currentChatId].messages.push(msg);
+            localStorage.setItem('chat_folders', JSON.stringify(folders));
+            input.value = '';
+            renderMessages();
+        }
+
+        function renderMessages() {
+            const win = document.getElementById('message-window');
+            win.innerHTML = '';
+            const msgs = folders[currentChatId].messages;
+
+            msgs.forEach(m => {
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble ${m.sender === 'me' ? 'bubble-out' : 'bubble-in'}`;
+                bubble.innerHTML = `
+                    <p class="leading-relaxed">${m.text}</p>
+                    <div class="text-[9px] opacity-60 text-right mt-1">${m.time}</div>
+                `;
+                win.appendChild(bubble);
+            });
+            win.scrollTop = win.scrollHeight;
+        }
+
+        // Enter key to send
+        document.getElementById('msg-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSendMessage();
+        });
+
     </script>
 </body>
 </html>
