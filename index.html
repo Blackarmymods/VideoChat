@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Custom Video Call</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: white; text-align: center; }
+        #video-grid { 
+            width: 90%; 
+            height: 500px; 
+            margin: 20px auto; 
+            border: 2px solid #333; 
+            border-radius: 15px;
+            background: #000;
+            overflow: hidden;
+        }
+        .controls { background: #1e1e1e; padding: 20px; border-bottom: 2px solid #333; }
+        input { padding: 12px; border-radius: 8px; border: none; width: 200px; margin-right: 10px; }
+        button { padding: 12px 25px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .join-btn { background: #00d26a; color: white; }
+        .join-btn:hover { background: #009e50; }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h1>Private Video Hub</h1>
+        <input type="text" id="roomID" placeholder="Room ID (e.g. 12345)">
+        <button class="join-btn" onclick="startVideoCall()">Start / Join Call</button>
+    </div>
+
+    <div id="video-grid"></div>
+
+    <script src="https://unpkg.com/zegoloud-prebuilt-sdk@latest/ZegoCloudPrebuilt.js"></script>
+    
+    <script>
+        function startVideoCall() {
+            const roomID = document.getElementById('roomID').value;
+            if (!roomID) {
+                alert("Please enter a Room ID first!");
+                return;
+            }
+
+            // --- APNI DETAILS YAHAN BHAREIN ---
+            const appID = 1424939938; // Bina quotes ke number likhein
+            const serverSecret = "b018f312b5c43842278780fe921b3e2e"; 
+            // ---------------------------------
+
+            const userID = "user_" + Math.floor(Math.random() * 1000);
+            const userName = "Member_" + userID;
+
+            // Token generate karna
+            const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+                appID, 
+                serverSecret, 
+                roomID, 
+                userID, 
+                userName
+            );
+
+            // SDK ko initialize karna
+            const zp = ZegoUIKitPrebuilt.create(kitToken);
+
+            // Room join karne ka function
+            zp.joinRoom({
+                container: document.querySelector('#video-grid'), // Video isi div mein aayega
+                sharedLinks: [{
+                    name: 'Copy link',
+                    url: window.location.protocol + '//' + window.location.host + window.location.pathname + '?roomID=' + roomID,
+                }],
+                scenario: {
+                    mode: ZegoUIKitPrebuilt.OneONoneCall, // One-on-one calling mode
+                },
+                showPreJoinView: false, // Direct camera start ho jayega
+                turnOnCameraWhenJoining: true,
+                turnOnMicrophoneWhenJoining: true,
+                useFrontFacingCamera: true,
+                showScreenSharingButton: true,
+            });
+        }
+    </script>
+</body>
+</html>
