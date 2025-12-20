@@ -35,7 +35,7 @@
         .screen-overlay {
             position: absolute;
             inset: 0;
-            background: #e6ebee; /* Wallpaper color from 1st code */
+            background: #e6ebee; 
             z-index: 100;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateX(100%);
@@ -54,45 +54,54 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* MERGED BUBBLE STYLES */
+        /* BUBBLE STYLES */
         .bubble {
             max-width: 80%;
-            padding: 8px 14px;
+            padding: 10px 14px;
             font-size: 15px;
             position: relative;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            margin-bottom: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
+        .bubble:active { opacity: 0.7; }
 
         .sent {
-            background: #efffde; /* Bubble-out from 1st code */
+            background: #efffde;
             align-self: flex-end;
             border-radius: 18px 18px 4px 18px;
             color: #000;
         }
 
         .received {
-            background: #ffffff; /* Bubble-in from 1st code */
+            background: #ffffff;
             align-self: flex-start;
             border-radius: 18px 18px 18px 4px;
             color: #000;
         }
 
-        /* SAFE ZONE FOOTER */
+        .message-link {
+            color: #2563eb;
+            text-decoration: underline;
+            word-break: break-all;
+        }
+
+        /* UPDATED INPUT FOOTER - Lifted even higher to avoid navigation overlap */
         .input-footer {
             background: #ffffff;
-            padding: 12px 15px 70px 15px; /* Extra bottom padding for safe navigation */
-            border-top: 1px solid #e0e0e0;
+            /* Padded even more to lift above system navigation buttons */
+            padding: 14px 15px calc(65px + env(safe-area-inset-bottom));
+            border-top: 1px solid #eee;
             display: flex;
             align-items: center;
             gap: 12px;
             z-index: 150;
+            box-shadow: 0 -8px 20px rgba(0,0,0,0.04);
         }
 
-        /* Primary Colors from 1st code */
-        .primary-bg { background-color: #517da2; } /* Telegram Blue */
-        .whatsapp-bg { background-color: #075e54; }
-
+        .primary-bg { background-color: #517da2; } 
+        
         #searchBar {
             max-height: 0;
             transition: max-height 0.3s ease-out;
@@ -103,15 +112,53 @@
             max-height: 65px;
         }
 
-        .chat-list-item:active {
-            background-color: #f1f5f9;
+        /* Context Menu for Edit/Delete */
+        #msgContextMenu {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            z-index: 300;
+            border-radius: 28px 28px 0 0;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 -15px 35px rgba(0,0,0,0.1);
+            padding-bottom: calc(30px + env(safe-area-inset-bottom));
         }
+        #msgContextMenu.active { transform: translateY(0); }
+        .overlay-dim {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 290;
+            display: none;
+        }
+        .overlay-dim.active { display: block; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
         
+        <!-- Context Menu -->
+        <div id="overlayDim" class="overlay-dim" onclick="hideMsgMenu()"></div>
+        <div id="msgContextMenu" class="p-6">
+            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
+            <button onclick="startEdit()" class="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors">
+                <div class="p-2.5 bg-blue-100 text-blue-600 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                </div>
+                <span class="font-bold text-gray-700 text-lg">Edit Karein</span>
+            </button>
+            <button onclick="deleteMsg()" class="w-full flex items-center gap-4 p-4 hover:bg-red-50 rounded-2xl transition-colors mt-2 text-red-500">
+                <div class="p-2.5 bg-red-100 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </div>
+                <span class="font-bold text-lg">Delete Karein</span>
+            </button>
+        </div>
+
         <!-- Registration Screen -->
         <div id="regScreen" class="absolute inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 hidden">
             <div class="w-24 h-24 primary-bg text-white rounded-[2rem] flex items-center justify-center mb-8 rotate-3 shadow-2xl text-4xl font-black">M</div>
@@ -121,7 +168,7 @@
                 class="w-full border-b-4 border-slate-100 p-4 outline-none focus:border-blue-500 transition-all mb-8 text-center font-bold text-2xl placeholder:text-slate-200">
             <button onclick="handleRegister()" 
                 class="w-full primary-bg text-white py-5 rounded-2xl font-bold shadow-xl active:scale-95 transition-all text-lg">
-                Create & Start Chat
+                Start Chat
             </button>
         </div>
 
@@ -143,13 +190,13 @@
 
             <div id="searchBar">
                 <div class="p-3">
-                    <input type="text" id="searchInput" oninput="liveSearch()" placeholder="Contact dhundein..." 
+                    <input type="text" id="searchInput" oninput="liveSearch()" placeholder="Search contacts..." 
                         class="w-full bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-inner outline-none focus:ring-2 focus:ring-blue-400">
                 </div>
             </div>
 
             <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Active Folders</span>
+                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Chat List</span>
                 <span id="userCount" class="text-[11px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-black">0</span>
             </div>
 
@@ -167,7 +214,7 @@
                 <img id="chatImg" src="" class="w-11 h-11 rounded-full border-2 border-white/20 shadow-sm">
                 <div class="flex-1 overflow-hidden">
                     <h3 id="chatName" class="font-bold leading-tight truncate text-lg">Name</h3>
-                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-widest">Online</p>
+                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-widest">Active Now</p>
                 </div>
             </header>
 
@@ -175,11 +222,21 @@
                 <!-- Messages bubbles -->
             </div>
 
+            <!-- Edit Indicator -->
+            <div id="editBar" class="hidden bg-slate-50 px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-blue-600">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <span>Message edit karein...</span>
+                </div>
+                <button onclick="cancelEdit()" class="px-2 py-1 bg-white border rounded text-slate-400">Cancel</button>
+            </div>
+
             <footer class="input-footer">
-                <input type="text" id="msgInput" placeholder="Message..." 
+                <input type="text" id="msgInput" placeholder="Aa..." 
                     class="flex-1 bg-gray-100 px-6 py-3 rounded-full outline-none shadow-sm text-base border border-gray-200 focus:border-blue-400">
                 <button onclick="sendMsg()" class="primary-bg text-white p-3.5 rounded-full shadow-xl active:scale-90 transition-all">
-                    <svg class="w-6 h-6 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                    <svg id="sendIcon" class="w-6 h-6 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
+                    <svg id="editIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
                 </button>
             </footer>
         </div>
@@ -191,6 +248,8 @@
         let users = JSON.parse(localStorage.getItem('local_messenger_users')) || [];
         let chats = JSON.parse(localStorage.getItem('local_messenger_chats')) || {};
         let currentUserId = null;
+        let selectedMsgIndex = null;
+        let isEditing = false;
 
         window.onload = () => {
             renderUsers();
@@ -245,9 +304,8 @@
                 div.className = "chat-list-item flex items-center gap-4 p-4 mb-1 bg-white rounded-2xl cursor-pointer hover:shadow-sm transition-all border-b border-slate-50";
                 div.onclick = () => openChat(u);
                 
-                // Get last message for preview
                 const userMsgs = chats[u.id] || [];
-                const lastMsgText = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].text : "Tap to chat...";
+                const lastMsg = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1] : { text: "Chat shuru karein..." };
 
                 div.innerHTML = `
                     <div class="relative">
@@ -259,7 +317,7 @@
                             <h4 class="font-bold text-slate-800 text-lg truncate">${u.name}</h4>
                             <span class="text-[9px] text-slate-300 font-black uppercase tracking-widest">${u.date}</span>
                         </div>
-                        <p class="text-sm text-slate-400 truncate font-medium">${lastMsgText}</p>
+                        <p class="text-sm text-slate-400 truncate font-medium">${lastMsg.text}</p>
                     </div>
                 `;
                 container.appendChild(div);
@@ -271,13 +329,21 @@
             document.getElementById('chatName').innerText = user.name;
             document.getElementById('chatImg').src = AV_API + user.name;
             document.getElementById('chatScreen').classList.add('active');
+            cancelEdit();
             renderMessages();
         }
 
         function closeChat() {
             document.getElementById('chatScreen').classList.remove('active');
             currentUserId = null;
-            renderUsers(); // Update last message preview
+            renderUsers();
+        }
+
+        function linkify(text) {
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlRegex, function(url) {
+                return `<a href="${url}" target="_blank" class="message-link">${url}</a>`;
+            });
         }
 
         function sendMsg() {
@@ -286,11 +352,18 @@
             if (!val || !currentUserId) return;
 
             if (!chats[currentUserId]) chats[currentUserId] = [];
-            chats[currentUserId].push({
-                text: val,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                me: true
-            });
+
+            if (isEditing && selectedMsgIndex !== null) {
+                chats[currentUserId][selectedMsgIndex].text = val;
+                chats[currentUserId][selectedMsgIndex].edited = true;
+                cancelEdit();
+            } else {
+                chats[currentUserId].push({
+                    text: val,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    me: true
+                });
+            }
 
             localStorage.setItem('local_messenger_chats', JSON.stringify(chats));
             input.value = '';
@@ -303,24 +376,70 @@
             const data = chats[currentUserId] || [];
 
             if (data.length === 0) {
-                win.innerHTML = `<div class="mx-auto mt-10 bg-white/50 border border-white px-6 py-2 rounded-full text-[11px] font-black text-slate-500 uppercase tracking-widest shadow-sm">Start Conversation</div>`;
+                win.innerHTML = `<div class="mx-auto mt-10 bg-white/50 border border-white px-6 py-2 rounded-full text-[11px] font-black text-slate-500 uppercase tracking-widest shadow-sm">Sand message</div>`;
             }
 
-            data.forEach(m => {
+            data.forEach((m, idx) => {
                 const div = document.createElement('div');
                 div.className = `bubble ${m.me ? 'sent' : 'received'}`;
+                
+                if (m.me) {
+                    div.onclick = () => showMsgMenu(idx);
+                }
+
                 div.innerHTML = `
-                    <p class="whitespace-pre-wrap leading-relaxed">${m.text}</p>
-                    <div class="text-[9px] text-right mt-1 opacity-60 font-bold tracking-tighter">${m.time}</div>
+                    <p class="whitespace-pre-wrap leading-relaxed">${linkify(m.text)}</p>
+                    <div class="flex items-center justify-end gap-1 text-[9px] mt-1 opacity-60 font-bold tracking-tighter">
+                        ${m.edited ? '<span>(edited)</span>' : ''}
+                        <span>${m.time}</span>
+                    </div>
                 `;
                 win.appendChild(div);
             });
             setTimeout(() => { win.scrollTop = win.scrollHeight; }, 50);
         }
 
-        document.getElementById('msgInput').onkeypress = (e) => {
-            if (e.key === 'Enter') sendMsg();
+        function showMsgMenu(index) {
+            selectedMsgIndex = index;
+            document.getElementById('msgContextMenu').classList.add('active');
+            document.getElementById('overlayDim').classList.add('active');
         }
-    </script>
-</body>
-</html>
+
+        function hideMsgMenu() {
+            document.getElementById('msgContextMenu').classList.remove('active');
+            document.getElementById('overlayDim').classList.remove('active');
+        }
+
+        function startEdit() {
+            const msg = chats[currentUserId][selectedMsgIndex];
+            const input = document.getElementById('msgInput');
+            input.value = msg.text;
+            input.focus();
+            
+            isEditing = true;
+            document.getElementById('editBar').classList.remove('hidden');
+            document.getElementById('sendIcon').classList.add('hidden');
+            document.getElementById('editIcon').classList.remove('hidden');
+            
+            hideMsgMenu();
+        }
+
+        function cancelEdit() {
+            isEditing = false;
+            selectedMsgIndex = null;
+            document.getElementById('msgInput').value = '';
+            document.getElementById('editBar').classList.add('hidden');
+            document.getElementById('sendIcon').classList.remove('hidden');
+            document.getElementById('editIcon').classList.add('hidden');
+        }
+
+        function deleteMsg() {
+            chats[currentUserId].splice(selectedMsgIndex, 1);
+            localStorage.setItem('local_messenger_chats', JSON.stringify(chats));
+            renderMessages();
+            hideMsgMenu();
+            cancelEdit();
+        }
+
+        document.getElementById('msgInput').onkeypress = (e) => {
+            if (e.key === 
