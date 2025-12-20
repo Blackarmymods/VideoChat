@@ -2,263 +2,325 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chat Messenger</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Messenger Pro - Merged Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
+        body { 
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+            background-color: #f0f2f5; 
+            height: 100vh; 
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            overflow: hidden;
             -webkit-tap-highlight-color: transparent;
         }
-
-        /* Telegram Style Blue */
-        .primary-bg { background-color: #517da2; }
-        .primary-text { color: #517da2; }
-
-        .chat-list-item:active {
-            background-color: #f1f5f9;
+        
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            background: white;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
         }
 
-        .message-bubble {
+        /* Screen Transitions */
+        .screen-overlay {
+            position: absolute;
+            inset: 0;
+            background: #e6ebee; /* Wallpaper color from 1st code */
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(100%);
+            display: flex;
+            flex-direction: column;
+        }
+        .screen-overlay.active { transform: translateX(0); }
+
+        /* Scrolling Areas */
+        .scrollable {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 20px;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* MERGED BUBBLE STYLES */
+        .bubble {
             max-width: 80%;
             padding: 8px 14px;
             font-size: 15px;
             position: relative;
-        }
-
-        .bubble-in {
-            background: #ffffff;
-            border-radius: 18px 18px 18px 4px;
-            align-self: flex-start;
-            color: #000;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 4px;
         }
 
-        .bubble-out {
-            background: #efffde; /* WhatsApp Greenish or #e1ffc7 */
-            border-radius: 18px 18px 4px 18px;
+        .sent {
+            background: #efffde; /* Bubble-out from 1st code */
             align-self: flex-end;
+            border-radius: 18px 18px 4px 18px;
             color: #000;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        #app-container {
-            max-width: 500px;
-            margin: 0 auto;
-            height: 100vh;
-            position: relative;
-            background: #e6ebee; /* Chat Wallpaper color */
+        .received {
+            background: #ffffff; /* Bubble-in from 1st code */
+            align-self: flex-start;
+            border-radius: 18px 18px 18px 4px;
+            color: #000;
+        }
+
+        /* SAFE ZONE FOOTER */
+        .input-footer {
+            background: #ffffff;
+            padding: 12px 15px 70px 15px; /* Extra bottom padding for safe navigation */
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 150;
+        }
+
+        /* Primary Colors from 1st code */
+        .primary-bg { background-color: #517da2; } /* Telegram Blue */
+        .whatsapp-bg { background-color: #075e54; }
+
+        #searchBar {
+            max-height: 0;
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+            background-color: #f1f5f9;
+        }
+        #searchBar.active {
+            max-height: 65px;
+        }
+
+        .chat-list-item:active {
+            background-color: #f1f5f9;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
 
-    <div id="app-container" class="shadow-2xl overflow-hidden flex flex-col bg-white">
+    <div class="app-container">
         
-        <!-- 1. Account Creation (One-time) -->
-        <div id="registration-screen" class="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-8 hidden">
-            <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
-                <svg class="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
-            </div>
-            <h1 class="text-2xl font-bold mb-2">Messenger Me Aaiye</h1>
-            <p class="text-gray-500 text-center mb-8">Apna naam likhein chat shuru karne ke liye.</p>
-            <input type="text" id="reg-name" placeholder="Aapka Naam" class="w-full border-b-2 border-blue-500 py-2 px-1 text-lg outline-none text-center mb-10">
-            <button onclick="createAccount()" class="w-full bg-blue-500 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-600 transition-all">Account Banayein</button>
+        <!-- Registration Screen -->
+        <div id="regScreen" class="absolute inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 hidden">
+            <div class="w-24 h-24 primary-bg text-white rounded-[2rem] flex items-center justify-center mb-8 rotate-3 shadow-2xl text-4xl font-black">M</div>
+            <h1 class="text-2xl font-bold text-slate-800 mb-1">Enter Your Name</h1>
+            <p class="text-slate-400 text-center mb-10 text-sm font-medium">Chat shuru karne ke liye apna naam enter karein.</p>
+            <input type="text" id="regNameInput" placeholder="Aapka Naam..." 
+                class="w-full border-b-4 border-slate-100 p-4 outline-none focus:border-blue-500 transition-all mb-8 text-center font-bold text-2xl placeholder:text-slate-200">
+            <button onclick="handleRegister()" 
+                class="w-full primary-bg text-white py-5 rounded-2xl font-bold shadow-xl active:scale-95 transition-all text-lg">
+                Create & Start Chat
+            </button>
         </div>
 
-        <!-- 2. Home Screen (Chat List) -->
-        <div id="home-screen" class="flex flex-col h-full">
-            <header class="primary-bg text-white p-4 flex items-center justify-between shadow-md">
+        <!-- Home Screen (Chat List) -->
+        <div id="homeScreen" class="flex flex-col h-full bg-white">
+            <header class="primary-bg text-white p-5 flex items-center justify-between shadow-lg">
                 <div class="flex items-center gap-3">
-                    <img id="my-profile-img" src="" class="w-10 h-10 rounded-full bg-blue-200 border border-white/20">
-                    <h2 class="font-bold text-xl">Messenger</h2>
+                    <h1 class="text-2xl font-extrabold tracking-tight">YouChat</h1>
                 </div>
-                <button onclick="toggleNewChatModal()" class="p-2 hover:bg-white/10 rounded-full">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                </button>
+                <div class="flex gap-2">
+                    <button onclick="toggleSearch()" class="p-2 hover:bg-white/10 rounded-full">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </button>
+                    <button onclick="showReg()" class="p-2 hover:bg-white/10 rounded-full">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </div>
             </header>
 
-            <div id="chat-list" class="flex-1 overflow-y-auto bg-white">
-                <!-- Chat Items like Telegram/WhatsApp -->
+            <div id="searchBar">
+                <div class="p-3">
+                    <input type="text" id="searchInput" oninput="liveSearch()" placeholder="Contact dhundein..." 
+                        class="w-full bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-inner outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+            </div>
+
+            <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Active Folders</span>
+                <span id="userCount" class="text-[11px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-black">0</span>
+            </div>
+
+            <div id="userList" class="scrollable px-2 hide-scrollbar">
+                <!-- Users Loaded via JS -->
             </div>
         </div>
 
-        <!-- 3. Chat Detail Screen -->
-        <div id="chat-detail-screen" class="fixed inset-0 z-40 bg-[#e6ebee] flex flex-col translate-x-full transition-transform duration-300">
-            <header class="primary-bg text-white p-3 flex items-center gap-2 shadow-md">
-                <button onclick="closeChat()" class="p-2 hover:bg-white/10 rounded-full">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        <!-- Chat Detail Overlay -->
+        <div id="chatScreen" class="screen-overlay">
+            <header class="primary-bg text-white p-4 flex items-center gap-3 shadow-lg z-10">
+                <button onclick="closeChat()" class="p-1 hover:bg-white/10 rounded-full transition-all">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 </button>
-                <img id="active-chat-img" src="" class="w-10 h-10 rounded-full bg-gray-200">
-                <div class="flex-1 overflow-hidden" onclick="toggleRenameContact()">
-                    <h3 id="active-chat-name" class="font-bold truncate">Banda</h3>
-                    <p class="text-[10px] text-blue-100 uppercase font-bold tracking-tighter">Online</p>
+                <img id="chatImg" src="" class="w-11 h-11 rounded-full border-2 border-white/20 shadow-sm">
+                <div class="flex-1 overflow-hidden">
+                    <h3 id="chatName" class="font-bold leading-tight truncate text-lg">Name</h3>
+                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-widest">Online</p>
                 </div>
             </header>
 
-            <div id="message-window" class="flex-1 overflow-y-auto p-4 flex flex-col gap-2 hide-scrollbar">
+            <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1 hide-scrollbar">
                 <!-- Messages bubbles -->
             </div>
 
-            <footer class="bg-white p-2 flex items-center gap-2 border-t">
-                <input type="text" id="msg-input" placeholder="Likhein..." class="flex-1 bg-gray-100 rounded-full px-5 py-2.5 outline-none text-sm">
-                <button onclick="handleSendMessage()" class="bg-blue-500 text-white p-2.5 rounded-full shadow-md">
+            <footer class="input-footer">
+                <input type="text" id="msgInput" placeholder="Message..." 
+                    class="flex-1 bg-gray-100 px-6 py-3 rounded-full outline-none shadow-sm text-base border border-gray-200 focus:border-blue-400">
+                <button onclick="sendMsg()" class="primary-bg text-white p-3.5 rounded-full shadow-xl active:scale-90 transition-all">
                     <svg class="w-6 h-6 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
                 </button>
             </footer>
         </div>
 
-        <!-- New Chat Modal -->
-        <div id="new-chat-modal" class="fixed inset-0 z-[60] bg-black/50 hidden items-center justify-center p-6">
-            <div class="bg-white rounded-2xl p-6 w-full max-w-xs shadow-2xl">
-                <h3 class="font-bold text-lg mb-4">Nayi Chat Folder</h3>
-                <input type="text" id="new-contact-name" placeholder="Bande ka naam..." class="w-full border p-3 rounded-xl mb-4 outline-none border-blue-200 focus:border-blue-500">
-                <div class="flex gap-2">
-                    <button onclick="toggleNewChatModal()" class="flex-1 text-gray-500 font-bold py-2">Cancel</button>
-                    <button onclick="createNewFolder()" class="flex-1 bg-blue-500 text-white rounded-lg font-bold py-2">Create</button>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <script>
-        const API_AVATAR = "https://ui-avatars.com/api/?background=random&color=fff&size=128&name=";
-        let myAccount = JSON.parse(localStorage.getItem('user_account')) || null;
-        let folders = JSON.parse(localStorage.getItem('chat_folders')) || {};
-        let currentChatId = null;
+        const AV_API = "https://ui-avatars.com/api/?background=random&color=fff&bold=true&size=128&name=";
+        let users = JSON.parse(localStorage.getItem('local_messenger_users')) || [];
+        let chats = JSON.parse(localStorage.getItem('local_messenger_chats')) || {};
+        let currentUserId = null;
 
         window.onload = () => {
-            if (!myAccount) {
-                document.getElementById('registration-screen').classList.remove('hidden');
-            } else {
-                initHome();
-            }
+            renderUsers();
+            if (users.length === 0) showReg();
         };
 
-        function createAccount() {
-            const name = document.getElementById('reg-name').value.trim();
-            if (name.length < 2) return alert("Sahi naam likhein!");
-            myAccount = { name: name, id: Date.now() };
-            localStorage.setItem('user_account', JSON.stringify(myAccount));
-            document.getElementById('registration-screen').classList.add('hidden');
-            initHome();
+        function showReg() {
+            document.getElementById('regScreen').classList.remove('hidden');
         }
 
-        function initHome() {
-            document.getElementById('my-profile-img').src = API_AVATAR + myAccount.name;
-            renderChatList();
-        }
+        function handleRegister() {
+            const input = document.getElementById('regNameInput');
+            const name = input.value.trim();
+            if (name.length < 2) return;
 
-        function toggleNewChatModal() {
-            const m = document.getElementById('new-chat-modal');
-            m.classList.toggle('hidden');
-            m.classList.toggle('flex');
-            document.getElementById('new-contact-name').focus();
-        }
-
-        function createNewFolder() {
-            const name = document.getElementById('new-contact-name').value.trim();
-            if (!name) return;
-            const id = name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
-            folders[id] = { name: name, messages: [], lastTime: '' };
-            localStorage.setItem('chat_folders', JSON.stringify(folders));
-            toggleNewChatModal();
-            renderChatList();
-            openChat(id);
-        }
-
-        function renderChatList() {
-            const list = document.getElementById('chat-list');
-            list.innerHTML = '';
+            const id = 'u_' + Date.now();
+            const newUser = { id, name, date: new Date().toLocaleDateString() };
             
-            const folderIds = Object.keys(folders);
-            if (folderIds.length === 0) {
-                list.innerHTML = `<div class="p-10 text-center text-gray-400 text-sm">Koi chat nahi hai. "+" par click karein.</div>`;
+            users.push(newUser);
+            localStorage.setItem('local_messenger_users', JSON.stringify(users));
+            
+            input.value = '';
+            document.getElementById('regScreen').classList.add('hidden');
+            renderUsers();
+            openChat(newUser);
+        }
+
+        function toggleSearch() {
+            const bar = document.getElementById('searchBar');
+            bar.classList.toggle('active');
+            if(bar.classList.contains('active')) document.getElementById('searchInput').focus();
+        }
+
+        function liveSearch() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = users.filter(u => u.name.toLowerCase().includes(q));
+            renderUsers(filtered);
+        }
+
+        function renderUsers(list = users) {
+            const container = document.getElementById('userList');
+            document.getElementById('userCount').innerText = list.length;
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="p-20 text-center text-slate-300 text-sm font-bold uppercase tracking-tighter italic">Koi folder nahi mila</div>`;
                 return;
             }
 
-            folderIds.forEach(id => {
-                const f = folders[id];
-                const lastMsg = f.messages.length > 0 ? f.messages[f.messages.length - 1].text : "Start chatting...";
-                const time = f.messages.length > 0 ? f.messages[f.messages.length - 1].time : "";
+            list.forEach(u => {
+                const div = document.createElement('div');
+                div.className = "chat-list-item flex items-center gap-4 p-4 mb-1 bg-white rounded-2xl cursor-pointer hover:shadow-sm transition-all border-b border-slate-50";
+                div.onclick = () => openChat(u);
                 
-                const item = document.createElement('div');
-                item.className = "chat-list-item flex items-center gap-4 p-4 cursor-pointer border-b border-gray-50 transition-colors";
-                item.onclick = () => openChat(id);
-                item.innerHTML = `
+                // Get last message for preview
+                const userMsgs = chats[u.id] || [];
+                const lastMsgText = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1].text : "Tap to chat...";
+
+                div.innerHTML = `
                     <div class="relative">
-                        <img src="${API_AVATAR + f.name}" class="w-14 h-14 rounded-full shadow-sm">
+                        <img src="${AV_API + u.name}" class="w-14 h-14 rounded-full shadow-sm">
                         <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-baseline mb-1">
-                            <h4 class="font-bold text-gray-800 truncate">${f.name}</h4>
-                            <span class="text-[10px] text-gray-400 font-medium">${time}</span>
+                        <div class="flex justify-between items-baseline mb-0.5">
+                            <h4 class="font-bold text-slate-800 text-lg truncate">${u.name}</h4>
+                            <span class="text-[9px] text-slate-300 font-black uppercase tracking-widest">${u.date}</span>
                         </div>
-                        <p class="text-sm text-gray-500 truncate">${lastMsg}</p>
+                        <p class="text-sm text-slate-400 truncate font-medium">${lastMsgText}</p>
                     </div>
                 `;
-                list.appendChild(item);
+                container.appendChild(div);
             });
         }
 
-        function openChat(id) {
-            currentChatId = id;
-            const f = folders[id];
-            document.getElementById('active-chat-name').innerText = f.name;
-            document.getElementById('active-chat-img').src = API_AVATAR + f.name;
-            document.getElementById('chat-detail-screen').style.transform = "translateX(0)";
+        function openChat(user) {
+            currentUserId = user.id;
+            document.getElementById('chatName').innerText = user.name;
+            document.getElementById('chatImg').src = AV_API + user.name;
+            document.getElementById('chatScreen').classList.add('active');
             renderMessages();
         }
 
         function closeChat() {
-            document.getElementById('chat-detail-screen').style.transform = "translateX(100%)";
-            renderChatList();
+            document.getElementById('chatScreen').classList.remove('active');
+            currentUserId = null;
+            renderUsers(); // Update last message preview
         }
 
-        function handleSendMessage() {
-            const input = document.getElementById('msg-input');
-            const text = input.value.trim();
-            if (!text || !currentChatId) return;
+        function sendMsg() {
+            const input = document.getElementById('msgInput');
+            const val = input.value.trim();
+            if (!val || !currentUserId) return;
 
-            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const msg = { text, time, sender: 'me' };
+            if (!chats[currentUserId]) chats[currentUserId] = [];
+            chats[currentUserId].push({
+                text: val,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                me: true
+            });
 
-            folders[currentChatId].messages.push(msg);
-            localStorage.setItem('chat_folders', JSON.stringify(folders));
+            localStorage.setItem('local_messenger_chats', JSON.stringify(chats));
             input.value = '';
             renderMessages();
         }
 
         function renderMessages() {
-            const win = document.getElementById('message-window');
+            const win = document.getElementById('msgWindow');
             win.innerHTML = '';
-            const msgs = folders[currentChatId].messages;
+            const data = chats[currentUserId] || [];
 
-            msgs.forEach(m => {
-                const bubble = document.createElement('div');
-                bubble.className = `message-bubble ${m.sender === 'me' ? 'bubble-out' : 'bubble-in'}`;
-                bubble.innerHTML = `
-                    <p class="leading-relaxed">${m.text}</p>
-                    <div class="text-[9px] opacity-60 text-right mt-1">${m.time}</div>
+            if (data.length === 0) {
+                win.innerHTML = `<div class="mx-auto mt-10 bg-white/50 border border-white px-6 py-2 rounded-full text-[11px] font-black text-slate-500 uppercase tracking-widest shadow-sm">Start Conversation</div>`;
+            }
+
+            data.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `bubble ${m.me ? 'sent' : 'received'}`;
+                div.innerHTML = `
+                    <p class="whitespace-pre-wrap leading-relaxed">${m.text}</p>
+                    <div class="text-[9px] text-right mt-1 opacity-60 font-bold tracking-tighter">${m.time}</div>
                 `;
-                win.appendChild(bubble);
+                win.appendChild(div);
             });
-            win.scrollTop = win.scrollHeight;
+            setTimeout(() => { win.scrollTop = win.scrollHeight; }, 50);
         }
 
-        // Enter key to send
-        document.getElementById('msg-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSendMessage();
-        });
-
+        document.getElementById('msgInput').onkeypress = (e) => {
+            if (e.key === 'Enter') sendMsg();
+        }
     </script>
 </body>
 </html>
