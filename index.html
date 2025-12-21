@@ -3,64 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>YouChat - Global</title>
+    <title>YouChat - Advanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f2f5; height: 100dvh; margin: 0; display: flex; justify-content: center; overflow: hidden; }
-        .app-container { width: 100%; max-width: 450px; background: white; height: 100dvh; position: relative; display: flex; flex-direction: column; }
-        .screen-overlay { position: absolute; inset: 0; background: #f8fafc; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(100%); display: flex; flex-direction: column; }
+        
+        /* Animated Background for Login */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .login-bg {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+        }
+
+        /* Desktop Layout logic */
+        .app-main-wrapper { 
+            display: flex; 
+            width: 100%; 
+            height: 100dvh; 
+            background: white; 
+            max-width: 1400px;
+        }
+
+        .sidebar { 
+            width: 100%; 
+            max-width: 450px; 
+            border-right: 1px solid #e5e7eb; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%;
+            background: white;
+            z-index: 10;
+        }
+
+        .chat-content { 
+            flex: 1; 
+            display: none; 
+            flex-direction: column; 
+            height: 100%;
+            background: #f8fafc;
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            .chat-content { display: flex; }
+            #chatScreen { position: relative; transform: none; inset: auto; width: 100%; height: 100%; }
+            #chatScreen header button { display: none; }
+            .sidebar { min-width: 350px; }
+        }
+
+        @media (max-width: 767px) {
+            .sidebar.hidden-mobile { display: none; }
+            .chat-content.active-mobile { display: flex; position: fixed; inset: 0; z-index: 50; }
+        }
+
+        .screen-overlay { position: fixed; inset: 0; background: #f8fafc; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(100%); display: flex; flex-direction: column; }
         .screen-overlay.active { transform: translateX(0); }
         .scrollable { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        
+        /* Bubble styling */
         .bubble { max-width: 80%; padding: 10px; font-size: 15px; margin-bottom: 4px; border-radius: 18px; word-wrap: break-word; position: relative; cursor: pointer; }
         .sent { background: #517da2; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #ffffff; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-link { color: #82ccdd; text-decoration: underline; font-weight: 600; }
+        .received .chat-link { color: #0984e3; }
+        
         .primary-bg { background-color: #517da2; }
         .img-msg { width: 100%; max-height: 250px; border-radius: 14px; object-fit: cover; margin: 4px 0; }
+        
+        /* Suggestions */
+        .suggestion-chip { background: white; border: 1px solid #e2e8f0; color: #64748b; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all 0.2s ease; }
+        .suggestion-chip:hover { background: #517da2; color: white; border-color: #517da2; }
+
         #imageModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
         .action-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; z-index: 200; border-top-left-radius: 24px; border-top-right-radius: 24px; transform: translateY(100%); transition: transform 0.3s ease; box-shadow: 0 -10px 25px rgba(0,0,0,0.1); padding: 20px; }
         .action-sheet.active { transform: translateY(0); }
         .overlay-dim { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 190; display: none; }
         .overlay-dim.active { display: block; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="app-container">
-        <div id="regScreen" class="absolute inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 hidden">
-            <div class="w-20 h-20 primary-bg text-white rounded-3xl flex items-center justify-center mb-6 text-4xl font-extrabold shadow-xl">Y</div>
-            <h2 class="text-2xl font-extrabold mb-6 text-gray-800">YouChat</h2>
-            <input type="text" id="regNameInput" placeholder="Aapka Naam..." class="w-full border-b-2 p-3 text-center mb-4 outline-none focus:border-blue-500 font-medium">
-            <input type="tel" id="phoneNumber" placeholder="+91 9876543210" class="w-full border-b-2 p-3 text-center mb-4 outline-none focus:border-blue-500">
-            <div id="recaptcha-container"></div>
-            <button id="btnSendOtp" class="w-full primary-bg text-white py-4 rounded-2xl font-bold mb-2 shadow-lg">Send OTP</button>
-            <div id="otpBox" class="hidden w-full">
-                <input type="text" id="otpInput" placeholder="Enter OTP" class="w-full border-b-2 p-3 text-center mb-4 outline-none">
-                <button id="btnVerifyOtp" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Verify & Start</button>
-            </div>
-            <button id="btnGuestLogin" class="mt-4 text-gray-400 font-bold hover:text-blue-500">Login as Guest</button>
-        </div>
-
-        <div id="homeScreen" class="flex flex-col h-full bg-white overflow-hidden">
+    <div class="app-main-wrapper">
+        
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar">
             <header class="primary-bg text-white px-5 py-4 flex justify-between items-center shrink-0 shadow-lg">
                 <div class="flex items-center gap-3 cursor-pointer" onclick="openProfileUI()">
-                    <div id="myHeaderAvatar" class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center font-bold overflow-hidden border-2 border-white/30 text-xs">🩷</div>
+                    <div id="myHeaderAvatar" class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center font-bold overflow-hidden border-2 border-white/30 text-xs shadow-inner"></div>
                     <div>
                         <h1 id="myHeaderName" class="font-bold text-sm leading-none mb-1">Loading...</h1>
                         <p class="text-[9px] opacity-70 font-medium uppercase tracking-tighter">My Settings</p>
                     </div>
                 </div>
                 <div class="flex-1 text-right">
-                    <span class="text-3xl font-extrabold tracking-tight uppercase leading-none block">You Chat</span>
+                    <span class="text-2xl font-extrabold tracking-tight uppercase leading-none block">You Chat</span>
                 </div>
             </header>
-            
+
             <div class="p-4 bg-white shrink-0">
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </span>
-                    <input type="text" id="searchInput" placeholder="Search friends by name..." class="w-full bg-gray-100 rounded-2xl pl-10 pr-4 py-3.5 outline-none text-sm font-medium focus:bg-gray-200 transition-colors">
+                    <input type="text" id="searchInput" placeholder="Search friends..." class="w-full bg-gray-100 rounded-2xl pl-10 pr-4 py-3 outline-none text-sm font-medium focus:ring-2 ring-indigo-200">
                 </div>
             </div>
 
@@ -68,8 +130,8 @@
                 <div id="globalChatBtn" class="mx-4 mb-4 p-5 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-3xl flex items-center gap-4 cursor-pointer shadow-lg active:scale-95 transition-transform">
                     <div class="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl shadow-inner">🌍</div>
                     <div class="flex-1">
-                        <h4 class="font-black text-lg leading-tight">Global Community</h4>
-                        <p class="text-xs text-white/80 font-medium">Join the world chat 🚀</p>
+                        <h4 class="font-black text-lg leading-tight">Global Group</h4>
+                        <p class="text-xs text-white/80 font-medium">Join world chat 🚀</p>
                     </div>
                 </div>
                 <div class="px-6 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Friends</div>
@@ -77,47 +139,97 @@
             </div>
         </div>
 
-        <div id="chatScreen" class="screen-overlay">
-            <header class="primary-bg text-white p-4 flex items-center gap-3 shrink-0 shadow-md">
-                <button onclick="document.getElementById('chatScreen').classList.remove('active')" class="p-1"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
-                <div id="chatIcon" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold overflow-hidden border border-white/20">🌍</div>
-                <h3 id="chatTitle" class="font-bold flex-1 truncate text-lg">Chat</h3>
-                <div class="text-[10px] font-black opacity-40 tracking-widest uppercase">YouChat</div>
-            </header>
-            <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1.5 bg-[#f0f4f7]"></div>
-            <footer class="flex items-center gap-3 p-4 bg-white border-t shrink-0">
-                <label class="p-3 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg><input type="file" id="imageInput" accept="image/*" class="hidden"></label>
-                <input type="text" id="msgInput" placeholder="Write a message..." class="flex-1 bg-gray-100 px-5 py-3.5 rounded-full outline-none font-medium">
-                <button id="btnSendMsg" class="primary-bg text-white p-4 rounded-full shadow-lg active:scale-90 transition-transform"><svg class="w-5 h-5 rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg></button>
-            </footer>
+        <!-- Chat Content Area -->
+        <div id="chatContentArea" class="chat-content">
+            <div id="chatPlaceholder" class="flex-1 flex flex-col items-center justify-center text-gray-300 p-10 text-center">
+                <div class="text-6xl mb-4 opacity-20">💬</div>
+                <h3 class="text-xl font-bold text-gray-400">Start a Conversation</h3>
+                <p class="text-sm">Select a user or group to begin.</p>
+            </div>
+
+            <div id="chatScreen" class="hidden flex-col h-full bg-[#f0f4f7] z-[60]">
+                <header class="primary-bg text-white p-4 flex items-center gap-3 shrink-0 shadow-md">
+                    <button onclick="closeChatUI()" class="p-1 md:hidden"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
+                    <div id="chatIcon" onclick="viewTargetPhoto()" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold overflow-hidden border border-white/20 text-xs cursor-pointer">🌍</div>
+                    <h3 id="chatTitle" class="font-bold flex-1 truncate text-lg">Chat</h3>
+                </header>
+                
+                <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1.5"></div>
+
+                <div class="bg-white/60 backdrop-blur-sm px-4 pt-2 shrink-0">
+                    <div id="suggestionBox" class="flex gap-2 overflow-x-auto pb-2 no-scrollbar"></div>
+                </div>
+
+                <footer class="flex items-center gap-3 p-4 bg-white border-t shrink-0">
+                    <label class="p-3 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200 transition-colors"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg><input type="file" id="imageInput" accept="image/*" class="hidden"></label>
+                    <input type="text" id="msgInput" placeholder="Write a message..." class="flex-1 bg-gray-100 px-5 py-3.5 rounded-full outline-none font-medium">
+                    <button id="btnSendMsg" class="primary-bg text-white p-4 rounded-full shadow-lg active:scale-90 transition-transform"><svg class="w-5 h-5 rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg></button>
+                </footer>
+            </div>
         </div>
 
+        <!-- Overlays -->
         <div id="imageModal">
-            <button onclick="document.getElementById('imageModal').style.display='none'" class="absolute top-6 right-6 text-white p-2 bg-black/20 rounded-full"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-            <img id="modalImg" class="max-w-full max-h-[75vh] object-contain rounded-lg">
-            <a id="downloadBtn" download="youchat_file.png" class="mt-8 bg-white text-gray-900 px-10 py-4 rounded-full font-bold shadow-2xl">Save to Gallery</a>
+            <button onclick="document.getElementById('imageModal').style.display='none'" class="absolute top-6 right-6 text-white p-2 bg-black/40 rounded-full backdrop-blur-md"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            <img id="modalImg" class="max-w-[90%] max-h-[75vh] object-contain rounded-2xl shadow-2xl border-2 border-white/20">
+            <a id="downloadBtn" download="youchat_file.png" class="mt-8 bg-white text-gray-900 px-10 py-4 rounded-full font-bold shadow-2xl active:scale-95 transition-transform">Save to Gallery</a>
         </div>
 
         <div id="overlayDim" class="overlay-dim" onclick="closeActionSheet()"></div>
         <div id="actionSheet" class="action-sheet">
-            <button id="editMsgBtn" class="w-full text-left py-4 font-bold border-b flex items-center gap-4 text-gray-700">Edit</button>
-            <button id="deleteMsgBtn" class="w-full text-left py-4 font-bold text-red-500 flex items-center gap-4">Delete</button>
+            <button id="editMsgBtn" class="w-full text-left py-4 font-bold border-b flex items-center gap-4 text-gray-700">Edit Message</button>
+            <button id="deleteMsgBtn" class="w-full text-left py-4 font-bold text-red-500 flex items-center gap-4">Delete for Everyone</button>
             <button onclick="closeActionSheet()" class="w-full mt-4 py-4 bg-gray-100 rounded-2xl font-bold text-gray-400">Cancel</button>
         </div>
 
         <div id="profileScreen" class="screen-overlay">
             <header class="primary-bg text-white p-4 flex items-center gap-3">
                 <button onclick="document.getElementById('profileScreen').classList.remove('active')" class="p-1"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
-                <h3 class="font-bold">Account Settings</h3>
+                <h3 class="font-bold text-lg">My Profile</h3>
             </header>
-            <div class="p-8 flex flex-col items-center">
-                <div class="relative group">
+            <div class="p-8 flex flex-col items-center max-w-md mx-auto w-full">
+                <div class="relative">
                     <div id="pSettingAvatar" class="w-32 h-32 rounded-full primary-bg flex items-center justify-center text-white text-4xl font-bold overflow-hidden border-4 border-white shadow-xl">?</div>
-                    <label class="absolute bottom-0 right-0 bg-blue-600 p-2.5 rounded-full text-white cursor-pointer shadow-lg active:scale-95 transition-transform"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg><input type="file" id="profileImgInput" accept="image/*" class="hidden"></label>
+                    <label class="absolute bottom-0 right-0 bg-blue-600 p-2.5 rounded-full text-white cursor-pointer shadow-lg hover:bg-blue-700 transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg><input type="file" id="profileImgInput" accept="image/*" class="hidden"></label>
                 </div>
-                <input type="text" id="editNameInput" class="w-full border-b-2 p-3 mt-10 text-center outline-none font-bold text-xl focus:border-blue-500">
-                <button id="btnSaveProfile" class="w-full primary-bg text-white py-4 rounded-2xl font-bold mt-8 shadow-lg">Save Profile</button>
-                <button id="btnLogout" class="mt-8 text-red-500 font-bold opacity-60 hover:opacity-100">Sign Out</button>
+                <div class="w-full mt-10 space-y-6">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-1">Display Name</label>
+                        <input type="text" id="editNameInput" class="w-full border-b-2 p-3 outline-none font-bold text-xl focus:border-indigo-500 transition-colors">
+                    </div>
+                    <button id="btnSaveProfile" class="w-full primary-bg text-white py-4 rounded-2xl font-bold shadow-lg hover:opacity-90 transition-opacity">Save Changes</button>
+                    <button id="btnLogout" class="w-full py-4 border-2 border-red-100 text-red-500 rounded-2xl font-bold hover:bg-red-50 transition-colors">Sign Out</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Glassmorphism Login Screen -->
+        <div id="regScreen" class="fixed inset-0 z-[200] login-bg flex flex-col items-center justify-center p-6 hidden">
+            <div class="glass-panel w-full max-w-md p-8 flex flex-col items-center shadow-2xl">
+                <div class="w-20 h-20 bg-white/30 backdrop-blur-md rounded-3xl flex items-center justify-center mb-6 shadow-xl border border-white/40">
+                    <span class="text-4xl font-black text-white">Y</span>
+                </div>
+                <h2 id="authTitle" class="text-3xl font-black mb-8 text-white tracking-tight">Welcome Back</h2>
+                
+                <div class="w-full space-y-4">
+                    <input type="text" id="regNameInput" placeholder="Full Name" class="w-full bg-white/20 border border-white/30 p-4 rounded-2xl outline-none text-white placeholder-white/70 font-medium hidden">
+                    <input type="email" id="emailInput" placeholder="Email Address" class="w-full bg-white/20 border border-white/30 p-4 rounded-2xl outline-none text-white placeholder-white/70 font-medium">
+                    <input type="password" id="passwordInput" placeholder="Password" class="w-full bg-white/20 border border-white/30 p-4 rounded-2xl outline-none text-white placeholder-white/70 font-medium">
+                    
+                    <button id="btnAuthAction" class="w-full bg-white text-indigo-600 py-4 rounded-2xl font-bold mt-4 shadow-xl active:scale-95 transition-transform">Login</button>
+                    
+                    <p id="authToggleText" class="mt-6 text-center text-sm text-white/90 font-medium">
+                        New here? <span id="toggleAuthMode" class="underline cursor-pointer font-bold">Create an account</span>
+                    </p>
+                    
+                    <div class="flex items-center gap-4 my-6 text-white/40">
+                        <div class="flex-1 border-b border-white/20"></div>
+                        <span class="text-[10px] font-black uppercase">OR</span>
+                        <div class="flex-1 border-b border-white/20"></div>
+                    </div>
+                    
+                    <button id="btnGuestLogin" class="w-full text-white font-bold opacity-80 hover:opacity-100 transition-opacity">Continue as Guest</button>
+                </div>
             </div>
         </div>
 
@@ -125,7 +237,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { getAuth, signInWithPhoneNumber, signInAnonymously, RecaptchaVerifier, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
         import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
         const firebaseConfig = {
@@ -141,49 +253,85 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
 
-        let myAcc = null, allUsers = [], chatMode = 'group', currentTargetId = null, confirmationResult = null, activeMsgId = null, editMode = false;
+        let myAcc = null, allUsers = [], chatMode = 'group', currentTarget = null, activeMsgId = null, editMode = false, isLoginMode = true;
+        let activeChatPath = null;
+        const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-        // --- 1. Auto Cleanup (7 Days) ---
-        function autoCleanupData() {
-            const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000); 
-            onValue(ref(db, 'group_chat'), (s) => {
-                s.forEach((child) => { if (child.val().timestamp && child.val().timestamp < oneWeekAgo) remove(ref(db, 'group_chat/' + child.key)); });
+        const suggestions = ["Hello!", "How are you?", "Hahaha", "Ok noted", "I'm busy", "Call you later", "Great!", "No thanks", "Yes", "Wait a sec"];
+
+        // URL Detection
+        function linkify(text) {
+            const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+            const wwwPattern = /(^|[^\/])(www\.[\S]+(\b|$))/gim;
+            let replacedText = text.replace(urlPattern, '<a href="$1" target="_blank" class="chat-link">$1</a>');
+            replacedText = replacedText.replace(wwwPattern, '$1<a href="http://$2" target="_blank" class="chat-link">$2</a>');
+            return replacedText;
+        }
+
+        // Suggestions update
+        const updateSuggestions = (val) => {
+            const box = document.getElementById('suggestionBox');
+            box.innerHTML = '';
+            const filtered = val ? suggestions.filter(s => s.toLowerCase().includes(val.toLowerCase())) : suggestions.slice(0, 5);
+            filtered.forEach(s => {
+                const btn = document.createElement('button');
+                btn.className = 'suggestion-chip';
+                btn.innerText = s;
+                btn.onclick = () => {
+                    document.getElementById('msgInput').value = s;
+                    updateSuggestions('');
+                    document.getElementById('msgInput').focus();
+                };
+                box.appendChild(btn);
+            });
+        };
+        document.getElementById('msgInput').oninput = (e) => updateSuggestions(e.target.value);
+
+        // Auto-Cleanup logic
+        function runAutoCleanup(path) {
+            onValue(ref(db, path), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                const now = Date.now();
+                Object.keys(data).forEach(key => {
+                    const msg = data[key];
+                    if (msg.timestamp && (now - msg.timestamp > ONE_WEEK_MS)) {
+                        remove(ref(db, `${path}/${key}`));
+                    }
+                });
             }, { onlyOnce: true });
         }
 
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                const userRef = ref(db, 'users/' + user.uid);
-                onValue(userRef, s => {
-                    myAcc = s.val();
-                    if (myAcc) {
-                        document.getElementById('regScreen').classList.add('hidden');
-                        initApp();
-                        update(userRef, { status: 'online' });
-                        onDisconnect(userRef).update({ status: 'offline', lastSeen: serverTimestamp() });
-                    } else {
-                        document.getElementById('regScreen').classList.remove('hidden');
-                    }
-                });
-            } else {
-                document.getElementById('regScreen').classList.remove('hidden');
-            }
-        });
+        // Auth Screens
+        const handleToggle = () => {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authTitle').innerText = isLoginMode ? "Welcome Back" : "Create Account";
+            document.getElementById('regNameInput').classList.toggle('hidden', isLoginMode);
+            document.getElementById('btnAuthAction').innerText = isLoginMode ? "Login" : "Sign Up";
+            document.getElementById('authToggleText').innerHTML = isLoginMode ? 
+                `New here? <span id="toggleAuthMode" class="underline cursor-pointer font-bold">Create account</span>` :
+                `Already have an account? <span id="toggleAuthMode" class="underline cursor-pointer font-bold">Login</span>`;
+            document.getElementById('toggleAuthMode').onclick = handleToggle;
+        };
+        document.getElementById('toggleAuthMode').onclick = handleToggle;
 
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
-        document.getElementById('btnSendOtp').onclick = async () => {
-            const phone = document.getElementById('phoneNumber').value.trim();
-            if(!phone) return alert("Phone number required");
-            confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
-            document.getElementById('otpBox').classList.remove('hidden');
+        document.getElementById('btnAuthAction').onclick = async () => {
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            const name = document.getElementById('regNameInput').value.trim();
+            if (!email || !password || (!isLoginMode && !name)) return;
+            try {
+                if (isLoginMode) await signInWithEmailAndPassword(auth, email, password);
+                else {
+                    const res = await createUserWithEmailAndPassword(auth, email, password);
+                    await saveUser(res.user.uid, name);
+                }
+            } catch (err) { alert(err.message); }
         };
-        document.getElementById('btnVerifyOtp').onclick = async () => {
-            const res = await confirmationResult.confirm(document.getElementById('otpInput').value);
-            saveUser(res.user.uid, document.getElementById('regNameInput').value.trim() || "User");
-        };
+
         document.getElementById('btnGuestLogin').onclick = async () => {
             const res = await signInAnonymously(auth);
-            saveUser(res.user.uid, document.getElementById('regNameInput').value.trim() || "Guest");
+            await saveUser(res.user.uid, "Guest_" + Math.floor(Math.random()*1000));
         };
 
         async function saveUser(uid, name) {
@@ -191,8 +339,23 @@
             await set(ref(db, 'users/' + uid), myAcc);
         }
 
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                onValue(ref(db, 'users/' + user.uid), s => {
+                    if (s.val()) {
+                        myAcc = s.val();
+                        document.getElementById('regScreen').classList.add('hidden');
+                        initApp();
+                        update(ref(db, 'users/' + user.uid), { status: 'online' });
+                        onDisconnect(ref(db, 'users/' + user.uid)).update({ status: 'offline' });
+                    }
+                });
+            } else {
+                document.getElementById('regScreen').classList.remove('hidden');
+            }
+        });
+
         function initApp() {
-            autoCleanupData();
             document.getElementById('myHeaderName').innerText = myAcc.name;
             renderAvatar(document.getElementById('myHeaderAvatar'), myAcc);
             onValue(ref(db, 'users'), snapshot => {
@@ -200,6 +363,8 @@
                 snapshot.forEach(child => { if (child.val().id !== myAcc.id) allUsers.push(child.val()); });
                 displayUsers(allUsers);
             });
+            updateSuggestions('');
+            runAutoCleanup('group_chat');
         }
 
         function displayUsers(users) {
@@ -207,45 +372,61 @@
             users.forEach(u => {
                 const isOnline = u.status === 'online';
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 mb-3 bg-white border border-gray-100 rounded-3xl cursor-pointer hover:bg-gray-50 transition-all";
+                div.className = "flex items-center gap-4 p-4 mb-3 bg-white border border-gray-100 rounded-3xl cursor-pointer hover:shadow-md transition-all";
                 div.onclick = () => openChat(u);
                 div.innerHTML = `
                     <div class="relative">
-                        <div class="w-12 h-12 primary-bg rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow-sm">
+                        <div class="w-12 h-12 primary-bg rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow-inner">
                             ${u.avatar ? `<img src="${u.avatar}" class="w-full h-full object-cover">` : u.initials}
                         </div>
                         <div class="absolute bottom-0 right-0 w-3.5 h-3.5 ${isOnline ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white rounded-full"></div>
                     </div>
-                    <div class="flex-1">
-                        <h4 class="font-bold text-gray-800">${u.name}</h4>
-                        <p class="text-[10px] ${isOnline ? 'text-green-500' : 'text-gray-400'} font-bold uppercase">${isOnline ? 'Online Now' : 'Offline'}</p>
-                    </div>`;
+                    <div class="flex-1 overflow-hidden"><h4 class="font-bold text-gray-800 truncate">${u.name}</h4></div>`;
                 list.appendChild(div);
             });
         }
 
-        document.getElementById('searchInput').oninput = (e) => {
-            const kw = e.target.value.toLowerCase();
-            displayUsers(allUsers.filter(u => u.name.toLowerCase().includes(kw)));
-        };
-
         window.openChat = (target = 'group') => {
-            document.getElementById('msgWindow').innerHTML = '';
+            document.getElementById('chatPlaceholder').classList.add('hidden');
+            const cs = document.getElementById('chatScreen');
+            cs.classList.remove('hidden'); cs.classList.add('flex');
+            
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden-mobile');
+                document.getElementById('chatContentArea').classList.add('active-mobile');
+            }
+
             if (target === 'group') {
-                chatMode = 'group';
+                chatMode = 'group'; activeChatPath = 'group_chat'; currentTarget = { name: "Global Group", avatar: null, initials: "🌍" };
                 document.getElementById('chatTitle').innerText = "Global Chat 🌍";
-                onValue(ref(db, 'group_chat'), s => renderMessages(s.val()));
+                document.getElementById('chatIcon').innerHTML = '🌍';
             } else {
-                chatMode = 'private'; currentTargetId = target.id;
+                chatMode = 'private'; currentTarget = target;
+                const cid = [myAcc.id, target.id].sort().join('_');
+                activeChatPath = 'private_chats/' + cid;
                 document.getElementById('chatTitle').innerText = target.name;
                 renderAvatar(document.getElementById('chatIcon'), target);
-                const cid = [myAcc.id, target.id].sort().join('_');
-                onValue(ref(db, 'private_chats/' + cid), s => renderMessages(s.val()));
+                runAutoCleanup(activeChatPath);
             }
-            document.getElementById('chatScreen').classList.add('active');
+            onValue(ref(db, activeChatPath), s => renderMessages(s.val()));
         };
 
-        // --- 2. Render Messages with Link Detection ---
+        window.viewTargetPhoto = () => {
+            if (currentTarget && (currentTarget.avatar || currentTarget.initials)) {
+                if (currentTarget.avatar) {
+                    document.getElementById('modalImg').src = currentTarget.avatar;
+                    document.getElementById('imageModal').style.display = 'flex';
+                }
+            }
+        };
+
+        window.closeChatUI = () => {
+            document.getElementById('sidebar').classList.remove('hidden-mobile');
+            document.getElementById('chatContentArea').classList.remove('active-mobile');
+            document.getElementById('chatScreen').classList.add('hidden');
+            document.getElementById('chatPlaceholder').classList.remove('hidden');
+        };
+
         function renderMessages(data) {
             const win = document.getElementById('msgWindow'); win.innerHTML = '';
             if (!data) return;
@@ -253,25 +434,13 @@
                 const m = data[key]; const isMe = m.sid === myAcc.id;
                 const div = document.createElement('div');
                 div.className = `bubble ${isMe ? 'sent' : 'received'}`;
-                
-                let bodyContent = "";
-                if (m.type === 'image') {
-                    bodyContent = `<img src="${m.content}" class="img-msg">`;
-                } else {
-                    // Link conversion logic
-                    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
-                    const formattedText = m.content.replace(urlRegex, (url) => {
-                        const href = url.startsWith('http') ? url : `http://${url}`;
-                        return `<a href="${href}" target="_blank" class="underline font-bold ${isMe ? 'text-yellow-200' : 'text-blue-600'}">${url}</a>`;
-                    });
-                    bodyContent = `<p class="font-medium">${formattedText}</p>`;
-                }
-
-                div.onclick = () => {
-                    if(m.type === 'image') { document.getElementById('modalImg').src = m.content; document.getElementById('downloadBtn').href = m.content; document.getElementById('imageModal').style.display='flex'; }
+                let contentHTML = m.type === 'image' ? `<img src="${m.content}" class="img-msg">` : `<div class="font-medium">${linkify(m.content)}</div>`;
+                div.onclick = (e) => {
+                    if (e.target.tagName === 'A') return;
+                    if(m.type === 'image') { document.getElementById('modalImg').src = m.content; document.getElementById('imageModal').style.display='flex'; }
                     if(isMe) showActions(key, m.type, m.content);
                 };
-                div.innerHTML = `<div class="text-[9px] font-black opacity-40 mb-1 uppercase tracking-tighter">${isMe ? 'You' : m.sname}</div>${bodyContent}<div class="text-[7px] text-right mt-1 opacity-50 font-bold">${m.edited ? 'Edited • ' : ''}${m.time}</div>`;
+                div.innerHTML = `<div class="text-[9px] font-black opacity-40 mb-1 uppercase">${isMe ? 'You' : m.sname}</div>${contentHTML}<div class="text-[7px] text-right mt-1 opacity-50">${m.time}</div>`;
                 win.appendChild(div);
             });
             win.scrollTop = win.scrollHeight;
@@ -279,21 +448,15 @@
 
         document.getElementById('btnSendMsg').onclick = () => {
             const input = document.getElementById('msgInput'); if (!input.value.trim()) return;
-            const path = chatMode === 'group' ? 'group_chat' : 'private_chats/' + [myAcc.id, currentTargetId].sort().join('_');
-            if(editMode) { update(ref(db, `${path}/${activeMsgId}`), { content: input.value, edited: true }); editMode = false; }
-            else { 
-                push(ref(db, path), { sid: myAcc.id, sname: myAcc.name, content: input.value, type: 'text', timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }); 
-            }
-            input.value = '';
+            if(editMode) { update(ref(db, `${activeChatPath}/${activeMsgId}`), { content: input.value, edited: true }); editMode = false; }
+            else push(ref(db, activeChatPath), { sid: myAcc.id, sname: myAcc.name, content: input.value, type: 'text', timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+            input.value = ''; updateSuggestions('');
         };
 
         document.getElementById('imageInput').onchange = (e) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const path = chatMode === 'group' ? 'group_chat' : 'private_chats/' + [myAcc.id, currentTargetId].sort().join('_');
-                push(ref(db, path), { sid: myAcc.id, sname: myAcc.name, content: reader.result, type: 'image', timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
-            };
-            reader.readAsDataURL(e.target.files[0]);
+            const r = new FileReader();
+            r.onload = () => push(ref(db, activeChatPath), { sid: myAcc.id, sname: myAcc.name, content: r.result, type: 'image', timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+            r.readAsDataURL(e.target.files[0]);
         };
 
         function showActions(id, type, content) {
@@ -302,16 +465,17 @@
             document.getElementById('editMsgBtn').onclick = () => { editMode = true; document.getElementById('msgInput').value = content; closeActionSheet(); };
         }
         window.closeActionSheet = () => { document.getElementById('overlayDim').classList.remove('active'); document.getElementById('actionSheet').classList.remove('active'); };
-        document.getElementById('deleteMsgBtn').onclick = () => { const path = chatMode === 'group' ? 'group_chat' : 'private_chats/' + [myAcc.id, currentTargetId].sort().join('_'); remove(ref(db, `${path}/${activeMsgId}`)); closeActionSheet(); };
+        document.getElementById('deleteMsgBtn').onclick = () => { remove(ref(db, `${activeChatPath}/${activeMsgId}`)); closeActionSheet(); };
 
         window.openProfileUI = () => { document.getElementById('editNameInput').value = myAcc.name; renderAvatar(document.getElementById('pSettingAvatar'), myAcc); document.getElementById('profileScreen').classList.add('active'); };
         document.getElementById('profileImgInput').onchange = (e) => { const reader = new FileReader(); reader.onload = () => { myAcc.avatar = reader.result; renderAvatar(document.getElementById('pSettingAvatar'), myAcc); }; reader.readAsDataURL(e.target.files[0]); };
-        document.getElementById('btnSaveProfile').onclick = async () => { myAcc.name = document.getElementById('editNameInput').value; myAcc.initials = myAcc.name.substring(0,2).toUpperCase(); await update(ref(db, 'users/' + myAcc.id), myAcc); location.reload(); };
-        document.getElementById('btnLogout').onclick = () => { update(ref(db, 'users/' + myAcc.id), { status: 'offline' }).then(() => signOut(auth).then(() => location.reload())); };
+        document.getElementById('btnSaveProfile').onclick = async () => { myAcc.name = document.getElementById('editNameInput').value; await update(ref(db, 'users/' + myAcc.id), myAcc); location.reload(); };
+        document.getElementById('btnLogout').onclick = () => signOut(auth).then(() => location.reload());
 
         function renderAvatar(el, user) { if (user.avatar) el.innerHTML = `<img src="${user.avatar}" class="w-full h-full object-cover">`; else el.innerHTML = user.initials || '?'; }
         document.getElementById('globalChatBtn').onclick = () => openChat('group');
         document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') document.getElementById('btnSendMsg').click(); };
+        document.getElementById('searchInput').oninput = (e) => displayUsers(allUsers.filter(u => u.name.toLowerCase().includes(e.target.value.toLowerCase())));
     </script>
 </body>
 </html>
