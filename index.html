@@ -3,39 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Messenger Pro - Merged Edition</title>
+    <title>Messenger Pro - Edit & Delete</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
         body { 
-            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: #f0f2f5; 
-            height: 100vh; 
+            height: 100dvh; 
             margin: 0;
             display: flex;
             justify-content: center;
             overflow: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
         
         .app-container {
             width: 100%;
             max-width: 450px;
             background: white;
-            height: 100vh;
+            height: 100dvh;
             position: relative;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* Screen Transitions */
         .screen-overlay {
             position: absolute;
             inset: 0;
-            background: #e6ebee; 
+            background: #f0f2f5; 
             z-index: 100;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateX(100%);
@@ -44,94 +41,61 @@
         }
         .screen-overlay.active { transform: translateX(0); }
 
-        /* Scrolling Areas */
         .scrollable {
             flex: 1;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            padding-bottom: 20px;
         }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* BUBBLE STYLES */
         .bubble {
             max-width: 80%;
             padding: 10px 14px;
             font-size: 15px;
+            margin-bottom: 4px;
+            border-radius: 18px;
+            word-wrap: break-word;
             position: relative;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            margin-bottom: 6px;
             cursor: pointer;
             transition: opacity 0.2s;
         }
         .bubble:active { opacity: 0.7; }
 
-        .sent {
-            background: #efffde;
-            align-self: flex-end;
-            border-radius: 18px 18px 4px 18px;
-            color: #000;
-        }
+        .sent { background: #517da2; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .received { background: #ffffff; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-        .received {
-            background: #ffffff;
-            align-self: flex-start;
-            border-radius: 18px 18px 18px 4px;
-            color: #000;
-        }
-
-        .message-link {
-            color: #2563eb;
-            text-decoration: underline;
-            word-break: break-all;
-        }
-
-        /* UPDATED INPUT FOOTER - Lifted even higher to avoid navigation overlap */
-        .input-footer {
-            background: #ffffff;
-            /* Padded even more to lift above system navigation buttons */
-            padding: 14px 15px calc(65px + env(safe-area-inset-bottom));
-            border-top: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            z-index: 150;
-            box-shadow: 0 -8px 20px rgba(0,0,0,0.04);
-        }
-
-        .primary-bg { background-color: #517da2; } 
+        .primary-bg { background-color: #517da2; }
         
-        #searchBar {
-            max-height: 0;
-            transition: max-height 0.3s ease-out;
-            overflow: hidden;
-            background-color: #f1f5f9;
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid white;
         }
-        #searchBar.active {
-            max-height: 65px;
-        }
+        .online-dot { background-color: #22c55e; }
+        .offline-dot { background-color: #94a3b8; }
 
-        /* Context Menu for Edit/Delete */
-        #msgContextMenu {
-            position: fixed;
+        /* Action Sheet */
+        .action-sheet {
+            position: absolute;
             bottom: 0;
             left: 0;
             right: 0;
             background: white;
-            z-index: 300;
-            border-radius: 28px 28px 0 0;
+            z-index: 200;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
             transform: translateY(100%);
             transition: transform 0.3s ease;
-            box-shadow: 0 -15px 35px rgba(0,0,0,0.1);
-            padding-bottom: calc(30px + env(safe-area-inset-bottom));
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
+            padding: 20px;
         }
-        #msgContextMenu.active { transform: translateY(0); }
+        .action-sheet.active { transform: translateY(0); }
         .overlay-dim {
-            position: fixed;
+            position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.45);
-            z-index: 290;
+            background: rgba(0,0,0,0.4);
+            z-index: 190;
             display: none;
         }
         .overlay-dim.active { display: block; }
@@ -140,232 +104,274 @@
 <body>
 
     <div class="app-container">
-        
-        <!-- Context Menu -->
-        <div id="overlayDim" class="overlay-dim" onclick="hideMsgMenu()"></div>
-        <div id="msgContextMenu" class="p-6">
-            <div class="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6"></div>
-            <button onclick="startEdit()" class="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-colors">
-                <div class="p-2.5 bg-blue-100 text-blue-600 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                </div>
-                <span class="font-bold text-gray-700 text-lg">Edit Karein</span>
-            </button>
-            <button onclick="deleteMsg()" class="w-full flex items-center gap-4 p-4 hover:bg-red-50 rounded-2xl transition-colors mt-2 text-red-500">
-                <div class="p-2.5 bg-red-100 rounded-xl">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                </div>
-                <span class="font-bold text-lg">Delete Karein</span>
-            </button>
-        </div>
-
         <!-- Registration Screen -->
         <div id="regScreen" class="absolute inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 hidden">
-            <div class="w-24 h-24 primary-bg text-white rounded-[2rem] flex items-center justify-center mb-8 rotate-3 shadow-2xl text-4xl font-black">M</div>
-            <h1 class="text-2xl font-bold text-slate-800 mb-1">Enter Your Name</h1>
-            <p class="text-slate-400 text-center mb-10 text-sm font-medium">Chat shuru karne ke liye apna naam enter karein.</p>
-            <input type="text" id="regNameInput" placeholder="Aapka Naam..." 
-                class="w-full border-b-4 border-slate-100 p-4 outline-none focus:border-blue-500 transition-all mb-8 text-center font-bold text-2xl placeholder:text-slate-200">
-            <button onclick="handleRegister()" 
-                class="w-full primary-bg text-white py-5 rounded-2xl font-bold shadow-xl active:scale-95 transition-all text-lg">
-                Start Chat
-            </button>
+            <div class="w-20 h-20 primary-bg text-white rounded-3xl flex items-center justify-center mb-6 text-3xl font-bold">M</div>
+            <h1 class="text-2xl font-bold mb-8">Messenger Pro</h1>
+            <input type="text" id="regNameInput" placeholder="Aapka Naam..." class="w-full border-b-2 p-3 outline-none text-center text-xl font-bold mb-8">
+            <button onclick="handleRegister()" class="w-full primary-bg text-white py-4 rounded-2xl font-bold">Start Chatting</button>
         </div>
 
-        <!-- Home Screen (Chat List) -->
-        <div id="homeScreen" class="flex flex-col h-full bg-white">
-            <header class="primary-bg text-white p-5 flex items-center justify-between shadow-lg">
-                <div class="flex items-center gap-3">
-                    <h1 class="text-2xl font-extrabold tracking-tight">YouChat</h1>
+        <!-- Home Screen -->
+        <div id="homeScreen" class="flex flex-col h-full bg-white overflow-hidden">
+            <header class="primary-bg text-white p-5 shadow-lg shrink-0">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">YouChat</h1>
+                    <div class="text-[10px] bg-white/20 px-3 py-1 rounded-full font-bold uppercase">Online</div>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="toggleSearch()" class="p-2 hover:bg-white/10 rounded-full">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </button>
-                    <button onclick="showReg()" class="p-2 hover:bg-white/10 rounded-full">
-                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                    </button>
-                </div>
+                <p id="myUserLabel" class="text-[11px] opacity-80 mt-1"></p>
             </header>
 
-            <div id="searchBar">
-                <div class="p-3">
-                    <input type="text" id="searchInput" oninput="liveSearch()" placeholder="Search contacts..." 
-                        class="w-full bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-inner outline-none focus:ring-2 focus:ring-blue-400">
+            <div class="p-4 shrink-0 bg-white">
+                <div class="bg-gray-100 rounded-2xl flex items-center px-4 py-3">
+                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search users..." class="bg-transparent outline-none flex-1 text-sm">
                 </div>
             </div>
 
-            <div class="px-5 py-3 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Chat List</span>
-                <span id="userCount" class="text-[11px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-black">0</span>
-            </div>
+            <div id="suggestionsBox" class="bg-white hidden absolute top-[165px] left-0 right-0 z-50 shadow-2xl border-b max-h-[300px] overflow-y-auto"></div>
 
-            <div id="userList" class="scrollable px-2 hide-scrollbar">
-                <!-- Users Loaded via JS -->
+            <div class="scrollable">
+                <div class="px-5 py-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">Global</div>
+                <div onclick="openGroupChat()" class="mx-4 my-2 p-4 bg-blue-50 rounded-2xl flex items-center gap-4 cursor-pointer">
+                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-xl">#</div>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-blue-900">Public Group</h4>
+                        <p class="text-xs text-blue-600">Open Channel</p>
+                    </div>
+                </div>
+
+                <div class="px-5 py-2 text-[11px] font-black text-slate-400 uppercase tracking-widest mt-4">Direct Messages</div>
+                <div id="searchedUsersList" class="px-4 pb-10"></div>
             </div>
         </div>
 
-        <!-- Chat Detail Overlay -->
+        <!-- Chat Overlay -->
         <div id="chatScreen" class="screen-overlay">
-            <header class="primary-bg text-white p-4 flex items-center gap-3 shadow-lg z-10">
-                <button onclick="closeChat()" class="p-1 hover:bg-white/10 rounded-full transition-all">
-                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
-                </button>
-                <img id="chatImg" src="" class="w-11 h-11 rounded-full border-2 border-white/20 shadow-sm">
-                <div class="flex-1 overflow-hidden">
-                    <h3 id="chatName" class="font-bold leading-tight truncate text-lg">Name</h3>
-                    <p class="text-[10px] text-blue-100 font-bold uppercase tracking-widest">Active Now</p>
+            <header class="primary-bg text-white p-4 flex items-center gap-3 shadow-md shrink-0">
+                <button onclick="closeChat()"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
+                <div id="chatIcon" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold">?</div>
+                <div class="flex-1">
+                    <h3 id="chatTitle" class="font-bold">Chat</h3>
+                    <div class="flex items-center gap-1.5"><span id="chatStatusDot" class="w-2 h-2 rounded-full"></span><p id="chatSub" class="text-[10px] opacity-90 uppercase font-black"></p></div>
                 </div>
             </header>
-
-            <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1 hide-scrollbar">
-                <!-- Messages bubbles -->
-            </div>
-
-            <!-- Edit Indicator -->
-            <div id="editBar" class="hidden bg-slate-50 px-4 py-3 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-blue-600">
-                <div class="flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <span>Message edit karein...</span>
-                </div>
-                <button onclick="cancelEdit()" class="px-2 py-1 bg-white border rounded text-slate-400">Cancel</button>
-            </div>
-
-            <footer class="input-footer">
-                <input type="text" id="msgInput" placeholder="Aa..." 
-                    class="flex-1 bg-gray-100 px-6 py-3 rounded-full outline-none shadow-sm text-base border border-gray-200 focus:border-blue-400">
-                <button onclick="sendMsg()" class="primary-bg text-white p-3.5 rounded-full shadow-xl active:scale-90 transition-all">
-                    <svg id="sendIcon" class="w-6 h-6 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
-                    <svg id="editIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
+            
+            <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1.5 bg-[#eef2f3]"></div>
+            
+            <footer class="flex items-center gap-3 p-4 bg-white border-t shrink-0">
+                <input type="text" id="msgInput" placeholder="Message..." class="flex-1 bg-gray-100 px-5 py-3 rounded-full outline-none">
+                <button id="sendBtn" onclick="sendMsg()" class="primary-bg text-white p-3 rounded-full shadow-lg">
+                    <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
                 </button>
             </footer>
         </div>
 
+        <!-- Action Sheet for Edit/Delete -->
+        <div id="overlayDim" class="overlay-dim" onclick="closeActionSheet()"></div>
+        <div id="actionSheet" class="action-sheet">
+            <h4 class="text-center font-bold text-gray-400 text-xs mb-4 uppercase">Message Options</h4>
+            <button onclick="prepareEdit()" class="w-full text-left py-4 px-2 font-bold text-gray-700 flex items-center gap-3 border-b border-gray-100">
+                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Message
+            </button>
+            <button onclick="deleteMsg()" class="w-full text-left py-4 px-2 font-bold text-red-500 flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Delete Message
+            </button>
+            <button onclick="closeActionSheet()" class="w-full mt-2 py-3 bg-gray-100 rounded-xl font-bold text-gray-500">Cancel</button>
+        </div>
     </div>
 
     <script>
-        const AV_API = "https://ui-avatars.com/api/?background=random&color=fff&bold=true&size=128&name=";
-        let users = JSON.parse(localStorage.getItem('local_messenger_users')) || [];
-        let chats = JSON.parse(localStorage.getItem('local_messenger_chats')) || {};
-        let currentUserId = null;
+        const ALL_CONTACTS = [
+            { id: 'u1', name: 'Rahul Chaudhary', avatar: 'RC' },
+            { id: 'u2', name: 'Priya Mehra', avatar: 'PM' },
+            { id: 'u3', name: 'Sameer Khan', avatar: 'SK' },
+            { id: 'u4', name: 'Anjali Sharma', avatar: 'AS' },
+            { id: 'u5', name: 'Vikram Singh', avatar: 'VS' }
+        ];
+
+        let myAcc = JSON.parse(localStorage.getItem('user_acc')) || null;
+        let groupChats = JSON.parse(localStorage.getItem('group_chats')) || [];
+        let privateChats = JSON.parse(localStorage.getItem('private_chats')) || {};
+        let activeRecent = JSON.parse(localStorage.getItem('recent_contacts')) || [];
+        let currentChatMode = 'group';
+        let currentTargetId = 'group';
+        
+        // State for Editing/Deleting
         let selectedMsgIndex = null;
         let isEditing = false;
 
+        function getStatus(id) {
+            const charSum = id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+            return (charSum + new Date().getHours()) % 3 === 0 ? 'Offline' : 'Online';
+        }
+
         window.onload = () => {
-            renderUsers();
-            if (users.length === 0) showReg();
+            if (!myAcc) document.getElementById('regScreen').classList.remove('hidden');
+            else initApp();
         };
 
-        function showReg() {
-            document.getElementById('regScreen').classList.remove('hidden');
-        }
-
         function handleRegister() {
-            const input = document.getElementById('regNameInput');
-            const name = input.value.trim();
+            const name = document.getElementById('regNameInput').value.trim();
             if (name.length < 2) return;
-
-            const id = 'u_' + Date.now();
-            const newUser = { id, name, date: new Date().toLocaleDateString() };
-            
-            users.push(newUser);
-            localStorage.setItem('local_messenger_users', JSON.stringify(users));
-            
-            input.value = '';
+            myAcc = { id: 'me_' + Date.now(), name };
+            localStorage.setItem('user_acc', JSON.stringify(myAcc));
             document.getElementById('regScreen').classList.add('hidden');
-            renderUsers();
-            openChat(newUser);
+            initApp();
         }
 
-        function toggleSearch() {
-            const bar = document.getElementById('searchBar');
-            bar.classList.toggle('active');
-            if(bar.classList.contains('active')) document.getElementById('searchInput').focus();
+        function initApp() {
+            document.getElementById('myUserLabel').innerText = `Account: ${myAcc.name}`;
+            renderRecentChats();
         }
 
-        function liveSearch() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = users.filter(u => u.name.toLowerCase().includes(q));
-            renderUsers(filtered);
-        }
-
-        function renderUsers(list = users) {
-            const container = document.getElementById('userList');
-            document.getElementById('userCount').innerText = list.length;
-            container.innerHTML = '';
-
-            if (list.length === 0) {
-                container.innerHTML = `<div class="p-20 text-center text-slate-300 text-sm font-bold uppercase tracking-tighter italic">Koi folder nahi mila</div>`;
-                return;
-            }
-
-            list.forEach(u => {
-                const div = document.createElement('div');
-                div.className = "chat-list-item flex items-center gap-4 p-4 mb-1 bg-white rounded-2xl cursor-pointer hover:shadow-sm transition-all border-b border-slate-50";
-                div.onclick = () => openChat(u);
-                
-                const userMsgs = chats[u.id] || [];
-                const lastMsg = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1] : { text: "Chat shuru karein..." };
-
-                div.innerHTML = `
-                    <div class="relative">
-                        <img src="${AV_API + u.name}" class="w-14 h-14 rounded-full shadow-sm">
-                        <div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const box = document.getElementById('suggestionsBox');
+            if (!query) { box.classList.add('hidden'); return; }
+            const matches = ALL_CONTACTS.filter(c => c.name.toLowerCase().includes(query));
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(c => `
+                    <div class="suggestion-item p-4 flex items-center gap-3 border-b hover:bg-gray-50 cursor-pointer" onclick="selectContact('${c.id}')">
+                        <div class="w-8 h-8 primary-bg text-white rounded-full flex items-center justify-center font-bold text-xs">${c.avatar}</div>
+                        <span class="font-bold text-sm">${c.name}</span>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-baseline mb-0.5">
-                            <h4 class="font-bold text-slate-800 text-lg truncate">${u.name}</h4>
-                            <span class="text-[9px] text-slate-300 font-black uppercase tracking-widest">${u.date}</span>
-                        </div>
-                        <p class="text-sm text-slate-400 truncate font-medium">${lastMsg.text}</p>
+                `).join('');
+                box.classList.remove('hidden');
+            } else box.classList.add('hidden');
+        }
+
+        function selectContact(id) {
+            const contact = ALL_CONTACTS.find(c => c.id === id);
+            document.getElementById('suggestionsBox').classList.add('hidden');
+            document.getElementById('searchInput').value = '';
+            if (!activeRecent.find(r => r.id === id)) {
+                activeRecent.unshift(contact);
+                localStorage.setItem('recent_contacts', JSON.stringify(activeRecent));
+            }
+            renderRecentChats();
+            openPrivateChat(contact);
+        }
+
+        function renderRecentChats() {
+            const list = document.getElementById('searchedUsersList');
+            list.innerHTML = '';
+            activeRecent.forEach(c => {
+                const isOnline = getStatus(c.id) === 'Online';
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-4 p-4 mb-3 bg-white border rounded-3xl cursor-pointer hover:shadow-sm";
+                div.onclick = () => openPrivateChat(c);
+                div.innerHTML = `
+                    <div class="relative shrink-0">
+                        <div class="w-12 h-12 primary-bg rounded-full flex items-center justify-center text-white font-bold">${c.avatar}</div>
+                        <span class="status-dot ${isOnline ? 'online-dot' : 'offline-dot'} absolute bottom-0 right-0"></span>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-gray-800">${c.name}</h4>
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">${isOnline ? 'Online' : 'Offline'}</p>
                     </div>
                 `;
-                container.appendChild(div);
+                list.appendChild(div);
             });
         }
 
-        function openChat(user) {
-            currentUserId = user.id;
-            document.getElementById('chatName').innerText = user.name;
-            document.getElementById('chatImg').src = AV_API + user.name;
+        function openGroupChat() {
+            currentChatMode = 'group';
+            currentTargetId = 'group';
+            document.getElementById('chatTitle').innerText = 'Public Group';
+            document.getElementById('chatSub').innerText = 'Online';
+            document.getElementById('chatStatusDot').className = "w-2 h-2 rounded-full online-dot";
             document.getElementById('chatScreen').classList.add('active');
-            cancelEdit();
+            renderMessages();
+        }
+
+        function openPrivateChat(contact) {
+            currentChatMode = 'private';
+            currentTargetId = contact.id;
+            const isOnline = getStatus(contact.id) === 'Online';
+            document.getElementById('chatTitle').innerText = contact.name;
+            document.getElementById('chatSub').innerText = isOnline ? 'Online' : 'Offline';
+            document.getElementById('chatStatusDot').className = `w-2 h-2 rounded-full ${isOnline ? 'online-dot' : 'offline-dot'}`;
+            document.getElementById('chatScreen').classList.add('active');
             renderMessages();
         }
 
         function closeChat() {
             document.getElementById('chatScreen').classList.remove('active');
-            currentUserId = null;
-            renderUsers();
+            isEditing = false;
+            document.getElementById('msgInput').value = '';
         }
 
-        function linkify(text) {
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            return text.replace(urlRegex, function(url) {
-                return `<a href="${url}" target="_blank" class="message-link">${url}</a>`;
-            });
+        // --- Message Actions Logic ---
+
+        function handleMessageClick(index, sender) {
+            if (sender !== 'me') return; // Doosre ke messages edit/delete nahi honge
+            selectedMsgIndex = index;
+            document.getElementById('overlayDim').classList.add('active');
+            document.getElementById('actionSheet').classList.add('active');
+        }
+
+        function closeActionSheet() {
+            document.getElementById('overlayDim').classList.remove('active');
+            document.getElementById('actionSheet').classList.remove('active');
+        }
+
+        function prepareEdit() {
+            isEditing = true;
+            const msgs = currentChatMode === 'group' ? groupChats : privateChats[currentTargetId];
+            document.getElementById('msgInput').value = msgs[selectedMsgIndex].text;
+            document.getElementById('msgInput').focus();
+            closeActionSheet();
+        }
+
+        function deleteMsg() {
+            if (currentChatMode === 'group') {
+                groupChats.splice(selectedMsgIndex, 1);
+                localStorage.setItem('group_chats', JSON.stringify(groupChats));
+            } else {
+                privateChats[currentTargetId].splice(selectedMsgIndex, 1);
+                localStorage.setItem('private_chats', JSON.stringify(privateChats));
+            }
+            closeActionSheet();
+            renderMessages();
         }
 
         function sendMsg() {
             const input = document.getElementById('msgInput');
             const val = input.value.trim();
-            if (!val || !currentUserId) return;
+            if (!val) return;
 
-            if (!chats[currentUserId]) chats[currentUserId] = [];
-
-            if (isEditing && selectedMsgIndex !== null) {
-                chats[currentUserId][selectedMsgIndex].text = val;
-                chats[currentUserId][selectedMsgIndex].edited = true;
-                cancelEdit();
+            if (isEditing) {
+                if (currentChatMode === 'group') {
+                    groupChats[selectedMsgIndex].text = val;
+                    groupChats[selectedMsgIndex].edited = true;
+                    localStorage.setItem('group_chats', JSON.stringify(groupChats));
+                } else {
+                    privateChats[currentTargetId][selectedMsgIndex].text = val;
+                    privateChats[currentTargetId][selectedMsgIndex].edited = true;
+                    localStorage.setItem('private_chats', JSON.stringify(privateChats));
+                }
+                isEditing = false;
             } else {
-                chats[currentUserId].push({
+                const msg = {
+                    senderName: myAcc.name,
                     text: val,
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    me: true
-                });
+                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    me: true,
+                    edited: false
+                };
+
+                if (currentChatMode === 'group') {
+                    groupChats.push(msg);
+                    localStorage.setItem('group_chats', JSON.stringify(groupChats));
+                } else {
+                    if (!privateChats[currentTargetId]) privateChats[currentTargetId] = [];
+                    privateChats[currentTargetId].push(msg);
+                    localStorage.setItem('private_chats', JSON.stringify(privateChats));
+                }
             }
 
-            localStorage.setItem('local_messenger_chats', JSON.stringify(chats));
             input.value = '';
             renderMessages();
         }
@@ -373,77 +379,26 @@
         function renderMessages() {
             const win = document.getElementById('msgWindow');
             win.innerHTML = '';
-            const data = chats[currentUserId] || [];
+            const msgs = currentChatMode === 'group' ? groupChats : (privateChats[currentTargetId] || []);
 
-            if (data.length === 0) {
-                win.innerHTML = `<div class="mx-auto mt-10 bg-white/50 border border-white px-6 py-2 rounded-full text-[11px] font-black text-slate-500 uppercase tracking-widest shadow-sm">Sand message</div>`;
-            }
-
-            data.forEach((m, idx) => {
+            msgs.forEach((m, index) => {
                 const div = document.createElement('div');
                 div.className = `bubble ${m.me ? 'sent' : 'received'}`;
-                
-                if (m.me) {
-                    div.onclick = () => showMsgMenu(idx);
-                }
-
+                div.onclick = () => handleMessageClick(index, m.me ? 'me' : 'them');
                 div.innerHTML = `
-                    <p class="whitespace-pre-wrap leading-relaxed">${linkify(m.text)}</p>
-                    <div class="flex items-center justify-end gap-1 text-[9px] mt-1 opacity-60 font-bold tracking-tighter">
-                        ${m.edited ? '<span>(edited)</span>' : ''}
+                    <div class="text-[8px] font-bold uppercase mb-0.5 opacity-60">${m.me ? 'You' : m.senderName}</div>
+                    <p class="text-[15px]">${m.text}</p>
+                    <div class="flex justify-end items-center gap-1 mt-1 opacity-40 text-[7px] font-bold">
+                        ${m.edited ? '<span>(Edited)</span>' : ''}
                         <span>${m.time}</span>
                     </div>
                 `;
                 win.appendChild(div);
             });
-            setTimeout(() => { win.scrollTop = win.scrollHeight; }, 50);
+            win.scrollTop = win.scrollHeight;
         }
 
-        function showMsgMenu(index) {
-            selectedMsgIndex = index;
-            document.getElementById('msgContextMenu').classList.add('active');
-            document.getElementById('overlayDim').classList.add('active');
-        }
-
-        function hideMsgMenu() {
-            document.getElementById('msgContextMenu').classList.remove('active');
-            document.getElementById('overlayDim').classList.remove('active');
-        }
-
-        function startEdit() {
-            const msg = chats[currentUserId][selectedMsgIndex];
-            const input = document.getElementById('msgInput');
-            input.value = msg.text;
-            input.focus();
-            
-            isEditing = true;
-            document.getElementById('editBar').classList.remove('hidden');
-            document.getElementById('sendIcon').classList.add('hidden');
-            document.getElementById('editIcon').classList.remove('hidden');
-            
-            hideMsgMenu();
-        }
-
-        function cancelEdit() {
-            isEditing = false;
-            selectedMsgIndex = null;
-            document.getElementById('msgInput').value = '';
-            document.getElementById('editBar').classList.add('hidden');
-            document.getElementById('sendIcon').classList.remove('hidden');
-            document.getElementById('editIcon').classList.add('hidden');
-        }
-
-        function deleteMsg() {
-            chats[currentUserId].splice(selectedMsgIndex, 1);
-            localStorage.setItem('local_messenger_chats', JSON.stringify(chats));
-            renderMessages();
-            hideMsgMenu();
-            cancelEdit();
-        }
-
-        document.getElementById('msgInput').onkeypress = (e) => {
-            if (e.key === 'Enter') sendMsg();
-        }
+        document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMsg(); };
     </script>
 </body>
 </html>
