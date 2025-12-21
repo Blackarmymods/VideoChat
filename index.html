@@ -3,402 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Messenger Pro - Edit & Delete</title>
+    <title>YouChat - Global</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        
-        body { 
-            font-family: 'Plus Jakarta Sans', sans-serif; 
-            background-color: #f0f2f5; 
-            height: 100dvh; 
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            overflow: hidden;
-        }
-        
-        .app-container {
-            width: 100%;
-            max-width: 450px;
-            background: white;
-            height: 100dvh;
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-
-        .screen-overlay {
-            position: absolute;
-            inset: 0;
-            background: #f0f2f5; 
-            z-index: 100;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateX(100%);
-            display: flex;
-            flex-direction: column;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f2f5; height: 100dvh; margin: 0; display: flex; justify-content: center; overflow: hidden; }
+        .app-container { width: 100%; max-width: 450px; background: white; height: 100dvh; position: relative; display: flex; flex-direction: column; }
+        .screen-overlay { position: absolute; inset: 0; background: #f8fafc; z-index: 100; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform: translateX(100%); display: flex; flex-direction: column; }
         .screen-overlay.active { transform: translateX(0); }
-
-        .scrollable {
-            flex: 1;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .bubble {
-            max-width: 80%;
-            padding: 10px 14px;
-            font-size: 15px;
-            margin-bottom: 4px;
-            border-radius: 18px;
-            word-wrap: break-word;
-            position: relative;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .bubble:active { opacity: 0.7; }
-
+        .scrollable { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        .bubble { max-width: 80%; padding: 10px; font-size: 15px; margin-bottom: 4px; border-radius: 18px; word-wrap: break-word; position: relative; cursor: pointer; }
         .sent { background: #517da2; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .received { background: #ffffff; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-
         .primary-bg { background-color: #517da2; }
-        
-        .status-dot {
-            height: 10px;
-            width: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            border: 2px solid white;
-        }
-        .online-dot { background-color: #22c55e; }
-        .offline-dot { background-color: #94a3b8; }
-
-        /* Action Sheet */
-        .action-sheet {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            z-index: 200;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
-            padding: 20px;
-        }
+        .img-msg { width: 100%; max-height: 250px; border-radius: 14px; object-fit: cover; margin: 4px 0; }
+        #imageModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .action-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; z-index: 200; border-top-left-radius: 24px; border-top-right-radius: 24px; transform: translateY(100%); transition: transform 0.3s ease; box-shadow: 0 -10px 25px rgba(0,0,0,0.1); padding: 20px; }
         .action-sheet.active { transform: translateY(0); }
-        .overlay-dim {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 190;
-            display: none;
-        }
+        .overlay-dim { position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 190; display: none; }
         .overlay-dim.active { display: block; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Registration Screen -->
         <div id="regScreen" class="absolute inset-0 z-[200] bg-white flex flex-col items-center justify-center p-8 hidden">
-            <div class="w-20 h-20 primary-bg text-white rounded-3xl flex items-center justify-center mb-6 text-3xl font-bold">M</div>
-            <h1 class="text-2xl font-bold mb-8">Messenger Pro</h1>
-            <input type="text" id="regNameInput" placeholder="Aapka Naam..." class="w-full border-b-2 p-3 outline-none text-center text-xl font-bold mb-8">
-            <button onclick="handleRegister()" class="w-full primary-bg text-white py-4 rounded-2xl font-bold">Start Chatting</button>
+            <div class="w-20 h-20 primary-bg text-white rounded-3xl flex items-center justify-center mb-6 text-4xl font-extrabold shadow-xl">Y</div>
+            <h2 class="text-2xl font-extrabold mb-6 text-gray-800">YouChat</h2>
+            <input type="text" id="regNameInput" placeholder="Aapka Naam..." class="w-full border-b-2 p-3 text-center mb-4 outline-none focus:border-blue-500 font-medium">
+            <input type="tel" id="phoneNumber" placeholder="+91 9876543210" class="w-full border-b-2 p-3 text-center mb-4 outline-none focus:border-blue-500">
+            <div id="recaptcha-container"></div>
+            <button id="btnSendOtp" class="w-full primary-bg text-white py-4 rounded-2xl font-bold mb-2 shadow-lg">Send OTP</button>
+            <div id="otpBox" class="hidden w-full">
+                <input type="text" id="otpInput" placeholder="Enter OTP" class="w-full border-b-2 p-3 text-center mb-4 outline-none">
+                <button id="btnVerifyOtp" class="w-full bg-green-600 text-white py-4 rounded-2xl font-bold">Verify & Start</button>
+            </div>
+            <button id="btnGuestLogin" class="mt-4 text-gray-400 font-bold hover:text-blue-500">Login as Guest</button>
         </div>
 
-        <!-- Home Screen -->
         <div id="homeScreen" class="flex flex-col h-full bg-white overflow-hidden">
-            <header class="primary-bg text-white p-5 shadow-lg shrink-0">
-                <div class="flex justify-between items-center">
-                    <h1 class="text-2xl font-bold">YouChat</h1>
-                    <div class="text-[10px] bg-white/20 px-3 py-1 rounded-full font-bold uppercase">Online</div>
-                </div>
-                <p id="myUserLabel" class="text-[11px] opacity-80 mt-1"></p>
-            </header>
-
-            <div class="p-4 shrink-0 bg-white">
-                <div class="bg-gray-100 rounded-2xl flex items-center px-4 py-3">
-                    <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Search users..." class="bg-transparent outline-none flex-1 text-sm">
-                </div>
-            </div>
-
-            <div id="suggestionsBox" class="bg-white hidden absolute top-[165px] left-0 right-0 z-50 shadow-2xl border-b max-h-[300px] overflow-y-auto"></div>
-
-            <div class="scrollable">
-                <div class="px-5 py-2 text-[11px] font-black text-slate-400 uppercase tracking-widest">Global</div>
-                <div onclick="openGroupChat()" class="mx-4 my-2 p-4 bg-blue-50 rounded-2xl flex items-center gap-4 cursor-pointer">
-                    <div class="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-xl">#</div>
-                    <div class="flex-1">
-                        <h4 class="font-bold text-blue-900">Public Group</h4>
-                        <p class="text-xs text-blue-600">Open Channel</p>
+            <header class="primary-bg text-white px-5 py-4 flex justify-between items-center shrink-0 shadow-lg">
+                <div class="flex items-center gap-3 cursor-pointer" onclick="openProfileUI()">
+                    <div id="myHeaderAvatar" class="w-11 h-11 rounded-full bg-white/20 flex items-center justify-center font-bold overflow-hidden border-2 border-white/30 text-xs">🩷</div>
+                    <div>
+                        <h1 id="myHeaderName" class="font-bold text-sm leading-none mb-1">Loading...</h1>
+                        <p class="text-[9px] opacity-70 font-medium uppercase tracking-tighter">My Settings</p>
                     </div>
                 </div>
-
-                <div class="px-5 py-2 text-[11px] font-black text-slate-400 uppercase tracking-widest mt-4">Direct Messages</div>
-                <div id="searchedUsersList" class="px-4 pb-10"></div>
-            </div>
-        </div>
-
-        <!-- Chat Overlay -->
-        <div id="chatScreen" class="screen-overlay">
-            <header class="primary-bg text-white p-4 flex items-center gap-3 shadow-md shrink-0">
-                <button onclick="closeChat()"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
-                <div id="chatIcon" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold">?</div>
-                <div class="flex-1">
-                    <h3 id="chatTitle" class="font-bold">Chat</h3>
-                    <div class="flex items-center gap-1.5"><span id="chatStatusDot" class="w-2 h-2 rounded-full"></span><p id="chatSub" class="text-[10px] opacity-90 uppercase font-black"></p></div>
+                <div class="flex-1 text-right">
+                    <span class="text-3xl font-extrabold tracking-tight uppercase leading-none block">You Chat</span>
                 </div>
             </header>
             
-            <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1.5 bg-[#eef2f3]"></div>
-            
+            <div class="p-4 bg-white shrink-0">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                    <input type="text" id="searchInput" placeholder="Search friends by name..." class="w-full bg-gray-100 rounded-2xl pl-10 pr-4 py-3.5 outline-none text-sm font-medium focus:bg-gray-200 transition-colors">
+                </div>
+            </div>
+
+            <div class="scrollable">
+                <div id="globalChatBtn" class="mx-4 mb-4 p-5 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-3xl flex items-center gap-4 cursor-pointer shadow-lg active:scale-95 transition-transform">
+                    <div class="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl shadow-inner">🌍</div>
+                    <div class="flex-1">
+                        <h4 class="font-black text-lg leading-tight">Global Community</h4>
+                        <p class="text-xs text-white/80 font-medium">Join the world chat 🚀</p>
+                    </div>
+                </div>
+                <div class="px-6 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Friends</div>
+                <div id="userList" class="px-4 pb-10"></div>
+            </div>
+        </div>
+
+        <div id="chatScreen" class="screen-overlay">
+            <header class="primary-bg text-white p-4 flex items-center gap-3 shrink-0 shadow-md">
+                <button onclick="document.getElementById('chatScreen').classList.remove('active')" class="p-1"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
+                <div id="chatIcon" class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold overflow-hidden border border-white/20">🌍</div>
+                <h3 id="chatTitle" class="font-bold flex-1 truncate text-lg">Chat</h3>
+                <div class="text-[10px] font-black opacity-40 tracking-widest uppercase">YouChat</div>
+            </header>
+            <div id="msgWindow" class="scrollable p-4 flex flex-col gap-1.5 bg-[#f0f4f7]"></div>
             <footer class="flex items-center gap-3 p-4 bg-white border-t shrink-0">
-                <input type="text" id="msgInput" placeholder="Message..." class="flex-1 bg-gray-100 px-5 py-3 rounded-full outline-none">
-                <button id="sendBtn" onclick="sendMsg()" class="primary-bg text-white p-3 rounded-full shadow-lg">
-                    <svg class="w-5 h-5 transform rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
-                </button>
+                <label class="p-3 bg-gray-100 rounded-full cursor-pointer hover:bg-gray-200"><svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 4v16m8-8H4"/></svg><input type="file" id="imageInput" accept="image/*" class="hidden"></label>
+                <input type="text" id="msgInput" placeholder="Write a message..." class="flex-1 bg-gray-100 px-5 py-3.5 rounded-full outline-none font-medium">
+                <button id="btnSendMsg" class="primary-bg text-white p-4 rounded-full shadow-lg active:scale-90 transition-transform"><svg class="w-5 h-5 rotate-90" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg></button>
             </footer>
         </div>
 
-        <!-- Action Sheet for Edit/Delete -->
+        <div id="imageModal">
+            <button onclick="document.getElementById('imageModal').style.display='none'" class="absolute top-6 right-6 text-white p-2 bg-black/20 rounded-full"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            <img id="modalImg" class="max-w-full max-h-[75vh] object-contain rounded-lg">
+            <a id="downloadBtn" download="youchat_file.png" class="mt-8 bg-white text-gray-900 px-10 py-4 rounded-full font-bold shadow-2xl">Save to Gallery</a>
+        </div>
+
         <div id="overlayDim" class="overlay-dim" onclick="closeActionSheet()"></div>
         <div id="actionSheet" class="action-sheet">
-            <h4 class="text-center font-bold text-gray-400 text-xs mb-4 uppercase">Message Options</h4>
-            <button onclick="prepareEdit()" class="w-full text-left py-4 px-2 font-bold text-gray-700 flex items-center gap-3 border-b border-gray-100">
-                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                Edit Message
-            </button>
-            <button onclick="deleteMsg()" class="w-full text-left py-4 px-2 font-bold text-red-500 flex items-center gap-3">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                Delete Message
-            </button>
-            <button onclick="closeActionSheet()" class="w-full mt-2 py-3 bg-gray-100 rounded-xl font-bold text-gray-500">Cancel</button>
+            <button id="editMsgBtn" class="w-full text-left py-4 font-bold border-b flex items-center gap-4 text-gray-700">Edit</button>
+            <button id="deleteMsgBtn" class="w-full text-left py-4 font-bold text-red-500 flex items-center gap-4">Delete</button>
+            <button onclick="closeActionSheet()" class="w-full mt-4 py-4 bg-gray-100 rounded-2xl font-bold text-gray-400">Cancel</button>
         </div>
+
+        <div id="profileScreen" class="screen-overlay">
+            <header class="primary-bg text-white p-4 flex items-center gap-3">
+                <button onclick="document.getElementById('profileScreen').classList.remove('active')" class="p-1"><svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
+                <h3 class="font-bold">Account Settings</h3>
+            </header>
+            <div class="p-8 flex flex-col items-center">
+                <div class="relative group">
+                    <div id="pSettingAvatar" class="w-32 h-32 rounded-full primary-bg flex items-center justify-center text-white text-4xl font-bold overflow-hidden border-4 border-white shadow-xl">?</div>
+                    <label class="absolute bottom-0 right-0 bg-blue-600 p-2.5 rounded-full text-white cursor-pointer shadow-lg active:scale-95 transition-transform"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg><input type="file" id="profileImgInput" accept="image/*" class="hidden"></label>
+                </div>
+                <input type="text" id="editNameInput" class="w-full border-b-2 p-3 mt-10 text-center outline-none font-bold text-xl focus:border-blue-500">
+                <button id="btnSaveProfile" class="w-full primary-bg text-white py-4 rounded-2xl font-bold mt-8 shadow-lg">Save Profile</button>
+                <button id="btnLogout" class="mt-8 text-red-500 font-bold opacity-60 hover:opacity-100">Sign Out</button>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        const ALL_CONTACTS = [
-            { id: 'u1', name: 'Rahul Chaudhary', avatar: 'RC' },
-            { id: 'u2', name: 'Priya Mehra', avatar: 'PM' },
-            { id: 'u3', name: 'Sameer Khan', avatar: 'SK' },
-            { id: 'u4', name: 'Anjali Sharma', avatar: 'AS' },
-            { id: 'u5', name: 'Vikram Singh', avatar: 'VS' }
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getAuth, signInWithPhoneNumber, signInAnonymously, RecaptchaVerifier, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { getDatabase, ref, set, push, onValue, update, remove, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
-        let myAcc = JSON.parse(localStorage.getItem('user_acc')) || null;
-        let groupChats = JSON.parse(localStorage.getItem('group_chats')) || [];
-        let privateChats = JSON.parse(localStorage.getItem('private_chats')) || {};
-        let activeRecent = JSON.parse(localStorage.getItem('recent_contacts')) || [];
-        let currentChatMode = 'group';
-        let currentTargetId = 'group';
-        
-        // State for Editing/Deleting
-        let selectedMsgIndex = null;
-        let isEditing = false;
-
-        function getStatus(id) {
-            const charSum = id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-            return (charSum + new Date().getHours()) % 3 === 0 ? 'Offline' : 'Online';
-        }
-
-        window.onload = () => {
-            if (!myAcc) document.getElementById('regScreen').classList.remove('hidden');
-            else initApp();
+        const firebaseConfig = {
+            apiKey: "AIzaSyBIJguEyg3PeivTmg8Kz9wq_kfL8Ksqe8M",
+            authDomain: "chat-cff83.firebaseapp.com",
+            projectId: "chat-cff83",
+            storageBucket: "chat-cff83.firebasestorage.app",
+            messagingSenderId: "1061734023756",
+            appId: "1:1061734023756:web:8b63a636d3639e137daae9"
         };
 
-        function handleRegister() {
-            const name = document.getElementById('regNameInput').value.trim();
-            if (name.length < 2) return;
-            myAcc = { id: 'me_' + Date.now(), name };
-            localStorage.setItem('user_acc', JSON.stringify(myAcc));
-            document.getElementById('regScreen').classList.add('hidden');
-            initApp();
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let myAcc = null, allUsers = [], chatMode = 'group', currentTargetId = null, confirmationResult = null, activeMsgId = null, editMode = false;
+
+        // --- 1. Auto Cleanup (7 Days) ---
+        function autoCleanupData() {
+            const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000); 
+            onValue(ref(db, 'group_chat'), (s) => {
+                s.forEach((child) => { if (child.val().timestamp && child.val().timestamp < oneWeekAgo) remove(ref(db, 'group_chat/' + child.key)); });
+            }, { onlyOnce: true });
+        }
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                const userRef = ref(db, 'users/' + user.uid);
+                onValue(userRef, s => {
+                    myAcc = s.val();
+                    if (myAcc) {
+                        document.getElementById('regScreen').classList.add('hidden');
+                        initApp();
+                        update(userRef, { status: 'online' });
+                        onDisconnect(userRef).update({ status: 'offline', lastSeen: serverTimestamp() });
+                    } else {
+                        document.getElementById('regScreen').classList.remove('hidden');
+                    }
+                });
+            } else {
+                document.getElementById('regScreen').classList.remove('hidden');
+            }
+        });
+
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
+        document.getElementById('btnSendOtp').onclick = async () => {
+            const phone = document.getElementById('phoneNumber').value.trim();
+            if(!phone) return alert("Phone number required");
+            confirmationResult = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+            document.getElementById('otpBox').classList.remove('hidden');
+        };
+        document.getElementById('btnVerifyOtp').onclick = async () => {
+            const res = await confirmationResult.confirm(document.getElementById('otpInput').value);
+            saveUser(res.user.uid, document.getElementById('regNameInput').value.trim() || "User");
+        };
+        document.getElementById('btnGuestLogin').onclick = async () => {
+            const res = await signInAnonymously(auth);
+            saveUser(res.user.uid, document.getElementById('regNameInput').value.trim() || "Guest");
+        };
+
+        async function saveUser(uid, name) {
+            myAcc = { id: uid, name, avatar: null, initials: name.substring(0,2).toUpperCase(), status: 'online' };
+            await set(ref(db, 'users/' + uid), myAcc);
         }
 
         function initApp() {
-            document.getElementById('myUserLabel').innerText = `Account: ${myAcc.name}`;
-            renderRecentChats();
+            autoCleanupData();
+            document.getElementById('myHeaderName').innerText = myAcc.name;
+            renderAvatar(document.getElementById('myHeaderAvatar'), myAcc);
+            onValue(ref(db, 'users'), snapshot => {
+                allUsers = [];
+                snapshot.forEach(child => { if (child.val().id !== myAcc.id) allUsers.push(child.val()); });
+                displayUsers(allUsers);
+            });
         }
 
-        function handleSearch() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const box = document.getElementById('suggestionsBox');
-            if (!query) { box.classList.add('hidden'); return; }
-            const matches = ALL_CONTACTS.filter(c => c.name.toLowerCase().includes(query));
-            if (matches.length > 0) {
-                box.innerHTML = matches.map(c => `
-                    <div class="suggestion-item p-4 flex items-center gap-3 border-b hover:bg-gray-50 cursor-pointer" onclick="selectContact('${c.id}')">
-                        <div class="w-8 h-8 primary-bg text-white rounded-full flex items-center justify-center font-bold text-xs">${c.avatar}</div>
-                        <span class="font-bold text-sm">${c.name}</span>
-                    </div>
-                `).join('');
-                box.classList.remove('hidden');
-            } else box.classList.add('hidden');
-        }
-
-        function selectContact(id) {
-            const contact = ALL_CONTACTS.find(c => c.id === id);
-            document.getElementById('suggestionsBox').classList.add('hidden');
-            document.getElementById('searchInput').value = '';
-            if (!activeRecent.find(r => r.id === id)) {
-                activeRecent.unshift(contact);
-                localStorage.setItem('recent_contacts', JSON.stringify(activeRecent));
-            }
-            renderRecentChats();
-            openPrivateChat(contact);
-        }
-
-        function renderRecentChats() {
-            const list = document.getElementById('searchedUsersList');
-            list.innerHTML = '';
-            activeRecent.forEach(c => {
-                const isOnline = getStatus(c.id) === 'Online';
+        function displayUsers(users) {
+            const list = document.getElementById('userList'); list.innerHTML = '';
+            users.forEach(u => {
+                const isOnline = u.status === 'online';
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-4 p-4 mb-3 bg-white border rounded-3xl cursor-pointer hover:shadow-sm";
-                div.onclick = () => openPrivateChat(c);
+                div.className = "flex items-center gap-4 p-4 mb-3 bg-white border border-gray-100 rounded-3xl cursor-pointer hover:bg-gray-50 transition-all";
+                div.onclick = () => openChat(u);
                 div.innerHTML = `
-                    <div class="relative shrink-0">
-                        <div class="w-12 h-12 primary-bg rounded-full flex items-center justify-center text-white font-bold">${c.avatar}</div>
-                        <span class="status-dot ${isOnline ? 'online-dot' : 'offline-dot'} absolute bottom-0 right-0"></span>
+                    <div class="relative">
+                        <div class="w-12 h-12 primary-bg rounded-full flex items-center justify-center text-white font-bold overflow-hidden shadow-sm">
+                            ${u.avatar ? `<img src="${u.avatar}" class="w-full h-full object-cover">` : u.initials}
+                        </div>
+                        <div class="absolute bottom-0 right-0 w-3.5 h-3.5 ${isOnline ? 'bg-green-500' : 'bg-gray-300'} border-2 border-white rounded-full"></div>
                     </div>
                     <div class="flex-1">
-                        <h4 class="font-bold text-gray-800">${c.name}</h4>
-                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">${isOnline ? 'Online' : 'Offline'}</p>
-                    </div>
-                `;
+                        <h4 class="font-bold text-gray-800">${u.name}</h4>
+                        <p class="text-[10px] ${isOnline ? 'text-green-500' : 'text-gray-400'} font-bold uppercase">${isOnline ? 'Online Now' : 'Offline'}</p>
+                    </div>`;
                 list.appendChild(div);
             });
         }
 
-        function openGroupChat() {
-            currentChatMode = 'group';
-            currentTargetId = 'group';
-            document.getElementById('chatTitle').innerText = 'Public Group';
-            document.getElementById('chatSub').innerText = 'Online';
-            document.getElementById('chatStatusDot').className = "w-2 h-2 rounded-full online-dot";
-            document.getElementById('chatScreen').classList.add('active');
-            renderMessages();
-        }
+        document.getElementById('searchInput').oninput = (e) => {
+            const kw = e.target.value.toLowerCase();
+            displayUsers(allUsers.filter(u => u.name.toLowerCase().includes(kw)));
+        };
 
-        function openPrivateChat(contact) {
-            currentChatMode = 'private';
-            currentTargetId = contact.id;
-            const isOnline = getStatus(contact.id) === 'Online';
-            document.getElementById('chatTitle').innerText = contact.name;
-            document.getElementById('chatSub').innerText = isOnline ? 'Online' : 'Offline';
-            document.getElementById('chatStatusDot').className = `w-2 h-2 rounded-full ${isOnline ? 'online-dot' : 'offline-dot'}`;
-            document.getElementById('chatScreen').classList.add('active');
-            renderMessages();
-        }
-
-        function closeChat() {
-            document.getElementById('chatScreen').classList.remove('active');
-            isEditing = false;
-            document.getElementById('msgInput').value = '';
-        }
-
-        // --- Message Actions Logic ---
-
-        function handleMessageClick(index, sender) {
-            if (sender !== 'me') return; // Doosre ke messages edit/delete nahi honge
-            selectedMsgIndex = index;
-            document.getElementById('overlayDim').classList.add('active');
-            document.getElementById('actionSheet').classList.add('active');
-        }
-
-        function closeActionSheet() {
-            document.getElementById('overlayDim').classList.remove('active');
-            document.getElementById('actionSheet').classList.remove('active');
-        }
-
-        function prepareEdit() {
-            isEditing = true;
-            const msgs = currentChatMode === 'group' ? groupChats : privateChats[currentTargetId];
-            document.getElementById('msgInput').value = msgs[selectedMsgIndex].text;
-            document.getElementById('msgInput').focus();
-            closeActionSheet();
-        }
-
-        function deleteMsg() {
-            if (currentChatMode === 'group') {
-                groupChats.splice(selectedMsgIndex, 1);
-                localStorage.setItem('group_chats', JSON.stringify(groupChats));
+        window.openChat = (target = 'group') => {
+            document.getElementById('msgWindow').innerHTML = '';
+            if (target === 'group') {
+                chatMode = 'group';
+                document.getElementById('chatTitle').innerText = "Global Chat 🌍";
+                onValue(ref(db, 'group_chat'), s => renderMessages(s.val()));
             } else {
-                privateChats[currentTargetId].splice(selectedMsgIndex, 1);
-                localStorage.setItem('private_chats', JSON.stringify(privateChats));
+                chatMode = 'private'; currentTargetId = target.id;
+                document.getElementById('chatTitle').innerText = target.name;
+                renderAvatar(document.getElementById('chatIcon'), target);
+                const cid = [myAcc.id, target.id].sort().join('_');
+                onValue(ref(db, 'private_chats/' + cid), s => renderMessages(s.val()));
             }
-            closeActionSheet();
-            renderMessages();
-        }
+            document.getElementById('chatScreen').classList.add('active');
+        };
 
-        function sendMsg() {
-            const input = document.getElementById('msgInput');
-            const val = input.value.trim();
-            if (!val) return;
-
-            if (isEditing) {
-                if (currentChatMode === 'group') {
-                    groupChats[selectedMsgIndex].text = val;
-                    groupChats[selectedMsgIndex].edited = true;
-                    localStorage.setItem('group_chats', JSON.stringify(groupChats));
-                } else {
-                    privateChats[currentTargetId][selectedMsgIndex].text = val;
-                    privateChats[currentTargetId][selectedMsgIndex].edited = true;
-                    localStorage.setItem('private_chats', JSON.stringify(privateChats));
-                }
-                isEditing = false;
-            } else {
-                const msg = {
-                    senderName: myAcc.name,
-                    text: val,
-                    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    me: true,
-                    edited: false
-                };
-
-                if (currentChatMode === 'group') {
-                    groupChats.push(msg);
-                    localStorage.setItem('group_chats', JSON.stringify(groupChats));
-                } else {
-                    if (!privateChats[currentTargetId]) privateChats[currentTargetId] = [];
-                    privateChats[currentTargetId].push(msg);
-                    localStorage.setItem('private_chats', JSON.stringify(privateChats));
-                }
-            }
-
-            input.value = '';
-            renderMessages();
-        }
-
-        function renderMessages() {
-            const win = document.getElementById('msgWindow');
-            win.innerHTML = '';
-            const msgs = currentChatMode === 'group' ? groupChats : (privateChats[currentTargetId] || []);
-
-            msgs.forEach((m, index) => {
+        // --- 2. Render Messages with Link Detection ---
+        function renderMessages(data) {
+            const win = document.getElementById('msgWindow'); win.innerHTML = '';
+            if (!data) return;
+            Object.keys(data).forEach(key => {
+                const m = data[key]; const isMe = m.sid === myAcc.id;
                 const div = document.createElement('div');
-                div.className = `bubble ${m.me ? 'sent' : 'received'}`;
-                div.onclick = () => handleMessageClick(index, m.me ? 'me' : 'them');
-                div.innerHTML = `
-                    <div class="text-[8px] font-bold uppercase mb-0.5 opacity-60">${m.me ? 'You' : m.senderName}</div>
-                    <p class="text-[15px]">${m.text}</p>
-                    <div class="flex justify-end items-center gap-1 mt-1 opacity-40 text-[7px] font-bold">
-                        ${m.edited ? '<span>(Edited)</span>' : ''}
-                        <span>${m.time}</span>
-                    </div>
-                `;
+                div.className = `bubble ${isMe ? 'sent' : 'received'}`;
+                
+                let bodyContent = "";
+                if (m.type === 'image') {
+                    bodyContent = `<img src="${m.content}" class="img-msg">`;
+                } else {
+                    // Link conversion logic
+                    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+                    const formattedText = m.content.replace(urlRegex, (url) => {
+                        const href = url.startsWith('http') ? url : `http://${url}`;
+                        return `<a href="${href}" target="_blank" class="underline font-bold ${isMe ? 'text-yellow-200' : 'text-blue-600'}">${url}</a>`;
+                    });
+                    bodyContent = `<p class="font-medium">${formattedText}</p>`;
+                }
+
+                div.onclick = () => {
+                    if(m.type === 'image') { document.getElementById('modalImg').src = m.content; document.getElementById('downloadBtn').href = m.content; document.getElementById('imageModal').style.display='flex'; }
+                    if(isMe) showActions(key, m.type, m.content);
+                };
+                div.innerHTML = `<div class="text-[9px] font-black opacity-40 mb-1 uppercase tracking-tighter">${isMe ? 'You' : m.sname}</div>${bodyContent}<div class="text-[7px] text-right mt-1 opacity-50 font-bold">${m.edited ? 'Edited • ' : ''}${m.time}</div>`;
                 win.appendChild(div);
             });
             win.scrollTop = win.scrollHeight;
         }
 
-        document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMsg(); };
+        document.getElementById('btnSendMsg').onclick = () => {
+            const input = document.getElementById('msgInput'); if (!input.value.trim()) return;
+            const path = chatMode === 'group' ? 'group_chat' : 'private_chats/' + [myAcc.id, currentTargetId].sort().join('_');
+            if(editMode) { update(ref(db, `${path}/${activeMsgId}`), { content: input.value, edited: true }); editMode = false; }
+            else { 
+                push(ref(db, path), { sid: myAcc.id, sname: myAcc.name, content: input.value, type: 'text', timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) }); 
+            }
+            input.value = '';
+        };
+
+        document.getElementById('imageInput').onchange = (e) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const path = chatMode === 'group' ? 'group_chat' : 'private_chats/' + [myAcc.id, currentTargetId].sort().join('_');
+                push(ref(db, path), { sid: myAcc.id, sname: myAcc.name, content: reader.result, type: 'image', timestamp: Date.now(), time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        };
+
+        function showActions(id, type, content) {
+            activeMsgId = id; document.getElementById('editMsgBtn').style.display = type === 'text' ? 'block' : 'none';
+            document.getElementById('overlayDim').classList.add('active'); document.getElementById('actionSheet').classList.add('active');
+            document.getElementById('editMsgBtn').onclick = () => { editMode = true; document.getElementById('msgInput').value = content; closeActionSheet(); };
+        }
+        window.closeActionSheet = () => { document.getElementById('overlayDim').classList.remove('active'); document.getElementById('actionSheet').classList.remove('active'); };
+        document.getElementById('deleteMsgBtn').onclick = () => { const path = chatMode === 'group' ? 'group_chat' : 'private_chats/' + [myAcc.id, currentTargetId].sort().join('_'); remove(ref(db, `${path}/${activeMsgId}`)); closeActionSheet(); };
+
+        window.openProfileUI = () => { document.getElementById('editNameInput').value = myAcc.name; renderAvatar(document.getElementById('pSettingAvatar'), myAcc); document.getElementById('profileScreen').classList.add('active'); };
+        document.getElementById('profileImgInput').onchange = (e) => { const reader = new FileReader(); reader.onload = () => { myAcc.avatar = reader.result; renderAvatar(document.getElementById('pSettingAvatar'), myAcc); }; reader.readAsDataURL(e.target.files[0]); };
+        document.getElementById('btnSaveProfile').onclick = async () => { myAcc.name = document.getElementById('editNameInput').value; myAcc.initials = myAcc.name.substring(0,2).toUpperCase(); await update(ref(db, 'users/' + myAcc.id), myAcc); location.reload(); };
+        document.getElementById('btnLogout').onclick = () => { update(ref(db, 'users/' + myAcc.id), { status: 'offline' }).then(() => signOut(auth).then(() => location.reload())); };
+
+        function renderAvatar(el, user) { if (user.avatar) el.innerHTML = `<img src="${user.avatar}" class="w-full h-full object-cover">`; else el.innerHTML = user.initials || '?'; }
+        document.getElementById('globalChatBtn').onclick = () => openChat('group');
+        document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') document.getElementById('btnSendMsg').click(); };
     </script>
 </body>
 </html>
