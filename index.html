@@ -1,1 +1,536 @@
-201247
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Wi-Fi Video Call & Nearby Discovery</title>
+    <!-- Tailwind CSS for Modern UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS Library for WebRTC Signalling -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- QR Code Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- QR Scanner Library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        .video-container {
+            position: relative;
+            background: #0f172a;
+            border-radius: 1.5rem;
+            overflow: hidden;
+        }
+        #remoteVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #localVideo {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            width: 110px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+            z-index: 10;
+        }
+        .radar-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+
+    <!-- Header -->
+    <header class="p-4 bg-slate-900/80 backdrop-blur flex items-center justify-between shadow-lg border-b border-slate-800 sticky top-0 z-40">
+        <h1 class="text-base sm:text-lg font-bold text-indigo-400 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 bg-green-500 rounded-full animate-ping"></span>
+            📶 Local Call & Radar
+        </h1>
+        
+        <!-- Hint / Help Button -->
+        <button onclick="openHelpModal()" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+            ❓ Hints & Help
+        </button>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 p-4 flex flex-col items-center justify-start max-w-md mx-auto w-full space-y-4">
+
+        <!-- Status Card -->
+        <div id="statusBox" class="w-full bg-slate-900/90 p-3 rounded-xl text-center border border-slate-800 text-xs font-medium shadow-md">
+            Status: <span id="statusText" class="text-yellow-400">Peer Network initialize ho raha hai...</span>
+        </div>
+
+        <!-- Video Calling Screen (Hidden Initially) -->
+        <div id="videoCallArea" class="hidden w-full h-[68vh] video-container flex items-center justify-center border border-slate-800 shadow-2xl">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" autoplay playsinline muted></video>
+            
+            <!-- Floating Controls -->
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-4 z-20 bg-slate-900/80 backdrop-blur p-2 rounded-full border border-slate-700 shadow-xl">
+                <button id="toggleMicBtn" class="bg-slate-800 p-3 rounded-full hover:bg-slate-700 transition">
+                    🎤
+                </button>
+                <button id="endCallBtn" class="bg-red-600 p-3 px-6 rounded-full font-bold hover:bg-red-700 shadow-lg text-white">
+                    End Call
+                </button>
+                <button id="toggleCamBtn" class="bg-slate-800 p-3 rounded-full hover:bg-slate-700 transition">
+                    📷
+                </button>
+            </div>
+        </div>
+
+        <!-- Setup & Discovery Screen -->
+        <div id="setupArea" class="w-full space-y-4">
+            
+            <!-- Profile Name Set Section -->
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg space-y-3">
+                <label class="text-xs font-semibold text-slate-400 block">Aapka Naam (Nearby devices ko dikhega):</label>
+                <div class="flex gap-2">
+                    <input type="text" id="deviceNameInput" placeholder="Apna naam likhein..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                    <button onclick="updateDeviceName()" class="bg-indigo-600 hover:bg-indigo-500 font-semibold px-4 py-2 rounded-xl text-xs transition">
+                        Save
+                    </button>
+                </div>
+            </div>
+
+            <!-- Nearby Active Devices (Radar Section) -->
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-indigo-300 flex items-center gap-2">
+                        🔍 Nearby Active Devices
+                    </h2>
+                    <span id="deviceCount" class="text-xs bg-indigo-950 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-800">0 Active</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Jo users abhi is website par active hain, unki list yahan automatic dikhegi:</p>
+
+                <!-- Device List Container -->
+                <div id="nearbyDevicesList" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <div class="text-center py-6 text-xs text-slate-500 radar-pulse">
+                        Nearby active devices ko dhoondha ja raha hai...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Connections / QR Code Section (Collapsible) -->
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 shadow-lg space-y-3">
+                <button onclick="toggleManualSection()" class="w-full text-left text-xs font-semibold text-slate-400 flex justify-between items-center">
+                    <span>📱 QR Code ya Direct ID se Connect Karein</span>
+                    <span id="manualToggleIcon">▼</span>
+                </button>
+
+                <div id="manualSection" class="hidden space-y-4 pt-2 border-t border-slate-800">
+                    <!-- My QR Code -->
+                    <div class="text-center space-y-2">
+                        <div class="flex justify-center my-1">
+                            <div id="qrcode" class="p-2 bg-white rounded-xl shadow-inner min-w-[130px] min-h-[130px] flex items-center justify-center">
+                                <span class="text-slate-500 text-xs">Generating...</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                            <span id="myPeerId" class="font-mono text-indigo-300 text-xs select-all">Generating ID...</span>
+                            <button onclick="copyMyId()" class="text-xs bg-indigo-600 px-2 py-1 rounded-lg hover:bg-indigo-500">Copy</button>
+                        </div>
+                    </div>
+
+                    <!-- QR Scanner & ID Input -->
+                    <div class="space-y-2">
+                        <button id="scanQrBtn" onclick="toggleScanner()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 font-semibold rounded-xl flex items-center justify-center gap-2 text-xs border border-slate-700 transition">
+                            📷 QR Code Scan Karein
+                        </button>
+                        <div id="qrScannerContainer" class="hidden rounded-xl overflow-hidden border border-indigo-500">
+                            <div id="reader" class="w-full"></div>
+                        </div>
+
+                        <div class="flex gap-2 pt-1">
+                            <input type="text" id="remotePeerIdInput" placeholder="Doosri Peer ID dalein" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                            <button onclick="connectToPeer()" class="bg-green-600 hover:bg-green-500 font-bold px-4 py-2 rounded-xl text-xs transition">
+                                Call
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-3 bg-slate-900/50 text-center text-[11px] text-slate-500 border-t border-slate-800/80">
+        💡 Samajh nahi aaya? Upar **"❓ Hints & Help"** button par click karein.
+    </footer>
+
+    <!-- HINT / HELP MODAL -->
+    <div id="helpModal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+            
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-indigo-400 flex items-center gap-2">
+                    💡 App Ko Kaise Use Karein?
+                </h3>
+                <button onclick="closeHelpModal()" class="text-slate-400 hover:text-white font-bold text-lg px-2">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Steps List -->
+            <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-indigo-300 mb-1">Step 1: Network Connect Karein 📶</p>
+                    <p class="text-slate-400">Ek phone me **Wi-Fi Hotspot** chalu karein aur doosre phone ko us hotspot Wi-Fi se connect karein. *(Internet Data ki zarurat NAHI hai)*.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-indigo-300 mb-1">Step 2: App Open Rakhein 🌐</p>
+                    <p class="text-slate-400">Dono phones ke browser me is website page ko open rakhein. Web page open hote hi nearby search me devices dikhne lagenge.</p>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-indigo-300 mb-1">Step 3: Call Connect Karein 📞</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li>**Option A (Best):** **"Nearby Active Devices"** list me doosre phone ka naam dikhega, uske aage **"Call"** button par tap karein.</li>
+                        <li>**Option B:** Agar nearby list me device na dikhe, toh **QR Code Scan** karke ya ID enter karke call karein.</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                    <p class="font-bold text-amber-400 mb-1">⚠️ Important Hints / Permissions</p>
+                    <ul class="list-disc list-inside space-y-1 text-slate-400">
+                        <li>Pehli baar call karne par Camera aur Microphone permission **Allow** karein.</li>
+                        <li>Jab tak dono phone par ye website open rahegi, tabhi tak nearby list me dikhenge. Website band karte hi device list se hat jayega.</li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Close Modal Button -->
+            <button onclick="closeHelpModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 font-bold text-xs rounded-xl transition">
+                Samajh Gaya 👍
+            </button>
+
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        let peer = null;
+        let localStream = null;
+        let currentCall = null;
+        let html5QrcodeScanner = null;
+        let myDeviceName = "User_" + Math.floor(1000 + Math.random() * 9000);
+
+        // Active Devices Tracking Broadcast Channel (Local Network Syncing)
+        const activePeers = new Map(); 
+        const BROADCAST_CHANNEL = "local_wifi_video_call_radar";
+        let radarChannel = null;
+        let heartbeatInterval = null;
+
+        const myPeerIdEl = document.getElementById('myPeerId');
+        const statusText = document.getElementById('statusText');
+        const setupArea = document.getElementById('setupArea');
+        const videoCallArea = document.getElementById('videoCallArea');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const deviceNameInput = document.getElementById('deviceNameInput');
+
+        // Set default device name
+        deviceNameInput.value = myDeviceName;
+
+        // 1. Initialize Peer & Local Discovery Radar
+        function initApp() {
+            peer = new Peer();
+
+            peer.on('open', (id) => {
+                myPeerIdEl.innerText = id;
+                statusText.innerText = "Ready! Nearby devices search ho rahe hain.";
+                statusText.className = "text-green-400 font-semibold";
+                
+                // Generate QR Code
+                document.getElementById('qrcode').innerHTML = "";
+                new QRCode(document.getElementById("qrcode"), {
+                    text: id,
+                    width: 120,
+                    height: 120
+                });
+
+                // Start Local Radar Heartbeat
+                startLocalRadar(id);
+            });
+
+            // Incoming Call receive hone par
+            peer.on('call', async (call) => {
+                statusText.innerText = "Incoming Call... Camera start ho raha hai.";
+                await startLocalCamera();
+                call.answer(localStream);
+                handleCall(call);
+            });
+
+            peer.on('error', (err) => {
+                console.error("Peer Error:", err);
+                statusText.innerText = "Error: " + err.type;
+                statusText.className = "text-red-400";
+            });
+        }
+
+        // 2. Local Radar System (Tab Active Detection Logic)
+        function startLocalRadar(myId) {
+            if ('BroadcastChannel' in window) {
+                radarChannel = new BroadcastChannel(BROADCAST_CHANNEL);
+
+                radarChannel.onmessage = (event) => {
+                    const { type, peerId, name, timestamp } = event.data;
+
+                    if (peerId === myId) return;
+
+                    if (type === 'PING' || type === 'PONG') {
+                        activePeers.set(peerId, { name, lastSeen: Date.now() });
+                        updateNearbyListUI();
+
+                        if (type === 'PING') {
+                            radarChannel.postMessage({
+                                type: 'PONG',
+                                peerId: myId,
+                                name: myDeviceName,
+                                timestamp: Date.now()
+                            });
+                        }
+                    } else if (type === 'LEAVE') {
+                        activePeers.delete(peerId);
+                        updateNearbyListUI();
+                    }
+                };
+
+                heartbeatInterval = setInterval(() => {
+                    radarChannel.postMessage({
+                        type: 'PING',
+                        peerId: myId,
+                        name: myDeviceName,
+                        timestamp: Date.now()
+                    });
+
+                    const now = Date.now();
+                    let updated = false;
+                    for (const [id, data] of activePeers.entries()) {
+                        if (now - data.lastSeen > 6000) {
+                            activePeers.delete(id);
+                            updated = true;
+                        }
+                    }
+                    if (updated) updateNearbyListUI();
+
+                }, 2000);
+
+                window.addEventListener('beforeunload', () => {
+                    if (radarChannel) {
+                        radarChannel.postMessage({
+                            type: 'LEAVE',
+                            peerId: myId
+                        });
+                    }
+                });
+            }
+        }
+
+        // 3. Update Nearby UI List
+        function updateNearbyListUI() {
+            const listEl = document.getElementById('nearbyDevicesList');
+            const countEl = document.getElementById('deviceCount');
+
+            countEl.innerText = `${activePeers.size} Active`;
+
+            if (activePeers.size === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-6 text-xs text-slate-500 radar-pulse">
+                        Koi nearby active device nahi mila.<br>
+                        <span class="text-[10px] text-slate-600">Doosre phone par bhi ye website open rakhein.</span>
+                    </div>`;
+                return;
+            }
+
+            listEl.innerHTML = "";
+            activePeers.forEach((data, peerId) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-xl hover:border-indigo-500/50 transition";
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-200">${escapeHtml(data.name)}</p>
+                            <p class="text-[10px] font-mono text-slate-500">${peerId.substring(0, 12)}...</p>
+                        </div>
+                    </div>
+                    <button onclick="connectToPeer('${peerId}')" class="bg-green-600 hover:bg-green-500 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-md transition flex items-center gap-1">
+                        📞 Call
+                    </button>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function updateDeviceName() {
+            const newName = deviceNameInput.value.trim();
+            if (newName) {
+                myDeviceName = newName;
+                alert("Aapka naam update ho gaya: " + myDeviceName);
+            }
+        }
+
+        // 4. Camera & Microphone Setup
+        async function startLocalCamera() {
+            if (!localStream) {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: "user" }, 
+                        audio: true 
+                    });
+                    localVideo.srcObject = localStream;
+                } catch (err) {
+                    alert("Camera/Mic permission zaroori hai!");
+                    console.error("Media Error:", err);
+                }
+            }
+        }
+
+        // 5. Dial Out Connection
+        async function connectToPeer(targetId) {
+            const peerId = targetId || document.getElementById('remotePeerIdInput').value.trim();
+            if (!peerId) {
+                alert("Valid Connection ID dalein!");
+                return;
+            }
+
+            statusText.innerText = "Call connect ki ja rahi hai...";
+            await startLocalCamera();
+
+            const call = peer.call(peerId, localStream);
+            handleCall(call);
+        }
+
+        // 6. Active Call Management
+        function handleCall(call) {
+            currentCall = call;
+
+            call.on('stream', (remoteStream) => {
+                remoteVideo.srcObject = remoteStream;
+                setupArea.classList.add('hidden');
+                videoCallArea.classList.remove('hidden');
+                statusText.innerText = "Video Call Connected";
+                statusText.className = "text-green-400 font-bold";
+
+                stopScanner();
+            });
+
+            call.on('close', () => {
+                endCall();
+            });
+        }
+
+        // 7. End Call
+        function endCall() {
+            if (currentCall) currentCall.close();
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            setupArea.classList.remove('hidden');
+            videoCallArea.classList.add('hidden');
+            statusText.innerText = "Call Khatam. Nearby devices active hain.";
+            statusText.className = "text-yellow-400";
+            
+            initApp();
+        }
+
+        // Modal Helpers
+        function openHelpModal() {
+            document.getElementById('helpModal').classList.remove('hidden');
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').classList.add('hidden');
+        }
+
+        // UI Helpers
+        function toggleManualSection() {
+            const section = document.getElementById('manualSection');
+            const icon = document.getElementById('manualToggleIcon');
+            section.classList.toggle('hidden');
+            icon.innerText = section.classList.contains('hidden') ? "▼" : "▲";
+        }
+
+        function toggleScanner() {
+            const container = document.getElementById('qrScannerContainer');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                html5QrcodeScanner = new Html5Qrcode("reader");
+                html5QrcodeScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 180, height: 180 } },
+                    (decodedText) => {
+                        stopScanner();
+                        connectToPeer(decodedText);
+                    },
+                    () => {}
+                ).catch(err => alert("Scanner camera open nahi ho paya."));
+            } else {
+                stopScanner();
+            }
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    document.getElementById('qrScannerContainer').classList.add('hidden');
+                    html5QrcodeScanner = null;
+                }).catch(err => console.error(err));
+            }
+        }
+
+        function copyMyId() {
+            const idText = myPeerIdEl.innerText;
+            navigator.clipboard.writeText(idText);
+            alert("Connection ID Copy ho gayi: " + idText);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+        }
+
+        // Video Control Event Listeners
+        document.getElementById('endCallBtn').addEventListener('click', endCall);
+
+        document.getElementById('toggleMicBtn').addEventListener('click', () => {
+            if (localStream) {
+                const audioTrack = localStream.getAudioTracks()[0];
+                audioTrack.enabled = !audioTrack.enabled;
+                document.getElementById('toggleMicBtn').innerText = audioTrack.enabled ? "🎤" : "🎙️❌";
+            }
+        });
+
+        document.getElementById('toggleCamBtn').addEventListener('click', () => {
+            if (localStream) {
+                const videoTrack = localStream.getVideoTracks()[0];
+                videoTrack.enabled = !videoTrack.enabled;
+                document.getElementById('toggleCamBtn').innerText = videoTrack.enabled ? "📷" : "📷❌";
+            }
+        });
+
+        // Initialize on load
+        window.onload = () => {
+            initApp();
+        };
+    </script>
+</body>
+</html>
+
+```
